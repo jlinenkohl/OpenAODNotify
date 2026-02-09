@@ -1,184 +1,250 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <!-- PROFILE SELECTOR -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Settings Profile"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption" />
+        <Spinner
+            android:id="@+id/spnProfile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?android:attr/listDivider"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Appearance Settings"
             android:textAppearance="@style/TextAppearance.AppCompat.Headline"
-            android:layout_marginBottom="24dp"/>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Shape"
-            android:textAppearance="@style/TextAppearance.AppCompat.Caption" />
-        <Spinner
-            android:id="@+id/spnShape"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="8dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Size / Stroke Thickness (pixels)"
-            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
-            android:layout_marginTop="16dp"/>
-        <EditText
-            android:id="@+id/etSize"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="number"
-            android:hint="60" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="16dp">
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Duration (ms)"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Caption" />
-                <EditText
-                    android:id="@+id/etDuration"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:hint="2500" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="8dp">
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Min Opacity (0.0-1.0)"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Caption" />
-                <EditText
-                    android:id="@+id/etMinAlpha"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="numberDecimal"
-                    android:hint="0.1" />
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:layout_marginStart="16dp">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Max Opacity (0.0-1.0)"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Caption" />
-                <EditText
-                    android:id="@+id/etMaxAlpha"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="numberDecimal"
-                    android:hint="1.0" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Global Settings"
-            android:textAppearance="@style/TextAppearance.AppCompat.Headline"
-            android:layout_marginTop="32dp"
             android:layout_marginBottom="16dp"/>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Timeout (minutes, max 720)"
-            android:textAppearance="@style/TextAppearance.AppCompat.Caption" />
-        <EditText
-            android:id="@+id/etTimeout"
+        <!-- SHAPE & ROUNDED TOGGLE -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number"
-            android:hint="5" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Shape"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Caption" />
+                <Spinner
+                    android:id="@+id/spnShape"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="8dp" />
+            </LinearLayout>
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/swRounded"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rounded"
+                android:layout_marginStart="16dp"/>
+        </LinearLayout>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Global Color (Hex, e.g., 0066ff)"
-            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
-            android:layout_marginTop="16dp"/>
-        <EditText
-            android:id="@+id/etColor"
+        <!-- GENERIC FIELD WITH STEPPER -->
+        <include layout="@layout/stepper_field" android:id="@+id/stepperSize"/>
+
+        <!-- COLOR MIXER SECTION -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="0066ff" />
+            android:orientation="vertical"
+            android:layout_marginTop="16dp"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Color Mixer"
+                android:textAppearance="@style/TextAppearance.AppCompat.Caption"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="8dp">
+                <EditText
+                    android:id="@+id/etColor"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="0066ff"
+                    android:maxLength="6"
+                    android:singleLine="true" />
+                <View
+                    android:id="@+id/color_preview"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="16dp"
+                    android:background="#0066ff" />
+            </LinearLayout>
+
+            <!-- RGB Sliders -->
+            <TextView android:text="Red" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:textSize="12sp"/>
+            <SeekBar android:id="@+id/seek_red" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="255" />
+
+            <TextView android:text="Green" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textSize="12sp"/>
+            <SeekBar android:id="@+id/seek_green" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="255" />
+
+            <TextView android:text="Blue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textSize="12sp"/>
+            <SeekBar android:id="@+id/seek_blue" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="255" />
+        </LinearLayout>
+
+        <!-- POSITIONING SECTION -->
 
         <LinearLayout
             android:id="@+id/layoutPosition"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:orientation="vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Position X (for dot/shape)"
-                android:textAppearance="@style/TextAppearance.AppCompat.Caption"
-                android:layout_marginTop="16dp"/>
-            <EditText
-                android:id="@+id/etX"
+                android:text="Positioning"
+                android:textAppearance="@style/TextAppearance.AppCompat.Caption" />
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="numberSigned"
-                android:hint="25" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="X Offset"
+                        android:textSize="10sp" />
+
+                    <EditText
+                        android:id="@+id/etX"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="25"
+                        android:inputType="numberSigned" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Y Offset"
+                        android:textSize="10sp" />
+
+                    <EditText
+                        android:id="@+id/etY"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="25"
+                        android:inputType="numberSigned" />
+                </LinearLayout>
+
+                <!-- NUDGE CONTROLS -->
+                <GridLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:columnCount="3"
+                    android:rowCount="2">
+
+                    <View
+                        android:layout_width="32dp"
+                        android:layout_height="32dp" />
+
+                    <ImageButton
+                        android:id="@+id/btnUp"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:contentDescription="Up"
+                        android:src="@android:drawable/arrow_up_float" />
+
+                    <View
+                        android:layout_width="32dp"
+                        android:layout_height="32dp" />
+
+                    <ImageButton
+                        android:id="@+id/btnLeft"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:contentDescription="Left"
+                        android:rotation="90"
+                        android:src="@android:drawable/arrow_down_float" />
+
+                    <ImageButton
+                        android:id="@+id/btnDown"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:contentDescription="Down"
+                        android:src="@android:drawable/arrow_down_float" />
+
+                    <ImageButton
+                        android:id="@+id/btnRight"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:contentDescription="Right"
+                        android:rotation="90"
+                        android:src="@android:drawable/arrow_up_float" />
+                </GridLayout>
+            </LinearLayout>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Position Y (for dot/shape)"
-                android:textAppearance="@style/TextAppearance.AppCompat.Caption"
-                android:layout_marginTop="16dp"/>
-            <EditText
-                android:id="@+id/etY"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="numberSigned"
-                android:hint="25" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Tip: You can drag the shape on screen to reposition it."
+                android:layout_marginTop="4dp"
+                android:text="Tip: Drag the handle or use arrows for fine-tuning."
                 android:textAppearance="@style/TextAppearance.AppCompat.Caption"
                 android:textColor="?android:attr/colorAccent"
-                android:layout_marginTop="4dp"
                 android:textStyle="italic" />
         </LinearLayout>
+
+        <include layout="@layout/stepper_field" android:id="@+id/stepperDuration"/>
+        <include layout="@layout/stepper_field" android:id="@+id/stepperMinAlpha"/>
+        <include layout="@layout/stepper_field" android:id="@+id/stepperMaxAlpha"/>
+        <include layout="@layout/stepper_field" android:id="@+id/stepperTimeout"/>
 
         <Button
             android:id="@+id/btnSave"

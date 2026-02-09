@@ -7,28 +7,36 @@
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="wrap_content"
+        android:minHeight="?attr/actionBarSize"
         android:background="#1E1E1E"
         android:elevation="4dp"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        android:fitsSystemWindows="true">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="OpenAODNotify"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:text="OpenAODNotify"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold" />
 
-        <ImageButton
-            android:id="@+id/btnSettings"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_gravity="end"
-            android:layout_marginEnd="16dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_preferences"
-            android:contentDescription="Settings" />
+            <ImageButton
+                android:id="@+id/btnSettings"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="16dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_preferences"
+                android:contentDescription="Settings" />
+        </RelativeLayout>
     </androidx.appcompat.widget.Toolbar>
 
     <ScrollView
@@ -109,12 +117,21 @@
                 android:layout_marginBottom="12dp"
                 android:backgroundTint="#34A853"/>
 
-            <!-- STEP 4: BATTERY OPTIMIZATION -->
+            <!-- STEP 4: ACCESSIBILITY PERMISSION -->
+            <Button
+                android:id="@+id/btnAccessibility"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:text="Step 4: Grant Accessibility Access"
+                android:layout_marginBottom="12dp"
+                android:backgroundTint="#9C27B0"/>
+
+            <!-- STEP 5: BATTERY OPTIMIZATION -->
             <Button
                 android:id="@+id/btnBattery"
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
-                android:text="Step 4: Ignore Battery Optimization"
+                android:text="Step 5: Ignore Battery Optimization"
                 android:layout_marginBottom="24dp"
                 android:backgroundTint="#FBBC05"
                 android:textColor="#000000"/>

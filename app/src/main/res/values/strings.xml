@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">OpenAODNotify</string>
+    <string name="accessibility_service_description">Provides a notification indicator overlay for the Always-on Display screen.</string>
 </resources>
