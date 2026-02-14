@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">OpenAODNotify</string>
-    <string name="accessibility_service_description">Provides a notification indicator overlay for the Always-on Display screen.</string>
+    <string name="accessibility_service_description">This service is used EXCLUSIVELY to display the notification indicator on the Always-on Display screen. It does not monitor your data, track your input, or read screen content.</string>
 </resources>

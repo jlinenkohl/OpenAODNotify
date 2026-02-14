@@ -1,9 +1,12 @@
 package com.widgethaus.openaodnotify;
 
+import android.app.Notification;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
+import android.os.Bundle;
 import android.os.PowerManager;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
@@ -58,8 +61,20 @@ public class OpenAODListener extends NotificationListenerService {
     private boolean isValidNotification(StatusBarNotification sbn) {
         if (sbn == null) return false;
         String pkg = sbn.getPackageName();
-        Log.d(TAG, "Checking notification validity from " + pkg);
-        return !sbn.isOngoing() &&
+        
+        // Log deep metadata for rule discovery
+        Notification notification = sbn.getNotification();
+        Bundle extras = notification.extras;
+        String title = String.valueOf(extras.get(Notification.EXTRA_TITLE));
+        String category = notification.category;
+        int priority = notification.priority;
+        String channelId = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? notification.getChannelId() : "N/A";
+
+        Log.d(TAG, String.format("🔍 Inspecting: Pkg=%s, Title=%s, Cat=%s, Chan=%s, Priority=%d, Ongoing=%b", 
+                pkg, title, category, channelId, priority, sbn.isOngoing()));
+
+        // Filter out system packages that have persistent/ambient notifications
+        return !sbn.isOngoing() && 
                !pkg.equals("android") && 
                !pkg.equals("com.android.systemui") && 
                !pkg.equals("com.android.settings") &&
@@ -104,7 +119,7 @@ public class OpenAODListener extends NotificationListenerService {
         Log.d(TAG, "Stopping Overlay Service (via Action)");
         Intent serviceIntent = new Intent(this, OpenAODOverlayService.class);
         serviceIntent.setAction(OpenAODOverlayService.ACTION_STOP);
-        startService(serviceIntent); // Use startService to send the action to the persistent accessibility service
+        startService(serviceIntent);
     }
 
     @Override
@@ -116,15 +131,22 @@ public class OpenAODListener extends NotificationListenerService {
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
         if (!isValidNotification(sbn)) return;
+        Log.d(TAG, "✅ Valid Notification Posted: " + sbn.getPackageName());
+        
         hasNotification = true;
         lastNotificationTime = System.currentTimeMillis();
+        
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        if (pm != null && !pm.isInteractive()) startOverlayService();
+        if (pm != null && !pm.isInteractive()) {
+            startOverlayService();
+        }
     }
 
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
         updateNotificationState();
-        if (!hasNotification) stopOverlayService();
+        if (!hasNotification) {
+            stopOverlayService();
+        }
     }
 }

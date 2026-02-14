@@ -2,6 +2,8 @@ package com.widgethaus.openaodnotify;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.provider.Settings;
+import android.text.TextUtils;
 
 public class PreferenceUtils {
     public static final String PREFS_NAME = "AOD_PREFS";
@@ -72,7 +74,6 @@ public class PreferenceUtils {
         editor.apply();
     }
     
-    // Helper to get prefixed keys
     public static int getInt(Context context, String key, int def) {
         return getPrefs(context).getInt(p(context, key), def);
     }
@@ -84,5 +85,31 @@ public class PreferenceUtils {
     }
     public static boolean getBoolean(Context context, String key, boolean def) {
         return getPrefs(context).getBoolean(p(context, key), def);
+    }
+
+    public static boolean isAccessibilityServiceEnabled(Context context) {
+        String service = context.getPackageName() + "/" + OpenAODOverlayService.class.getCanonicalName();
+        int enabled = 0;
+        try {
+            enabled = Settings.Secure.getInt(context.getContentResolver(), Settings.Secure.ACCESSIBILITY_ENABLED);
+        } catch (Settings.SettingNotFoundException ignored) {}
+
+        if (enabled == 1) {
+            String settingValue = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            if (settingValue != null) {
+                TextUtils.SimpleStringSplitter splitter = new TextUtils.SimpleStringSplitter(':');
+                splitter.setString(settingValue);
+                while (splitter.hasNext()) {
+                    if (splitter.next().equalsIgnoreCase(service)) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static boolean isNotificationAccessGranted(Context context) {
+        String pkgName = context.getPackageName();
+        String flat = Settings.Secure.getString(context.getContentResolver(), "enabled_notification_listeners");
+        return flat != null && flat.contains(pkgName);
     }
 }

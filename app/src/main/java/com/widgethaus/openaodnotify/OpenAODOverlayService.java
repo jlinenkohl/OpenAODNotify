@@ -8,6 +8,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.GradientDrawable;
@@ -44,6 +45,7 @@ public class OpenAODOverlayService extends AccessibilityService {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable timeoutRunnable;
     private boolean isOverlayVisible = false;
+    private Intent lastStartIntent;
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {}
@@ -97,7 +99,9 @@ public class OpenAODOverlayService extends AccessibilityService {
             if (ACTION_STOP.equals(action)) {
                 Log.d(TAG, "Manual Stop requested");
                 cleanupViews();
+                lastStartIntent = null;
             } else {
+                lastStartIntent = intent;
                 boolean isPreview = intent.getBooleanExtra("preview", false);
                 if (!isPreview && isOverlayVisible) {
                     Log.d(TAG, "Overlay already active, refreshing timeout");
@@ -108,6 +112,20 @@ public class OpenAODOverlayService extends AccessibilityService {
             }
         }
         return START_STICKY;
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (isOverlayVisible && lastStartIntent != null) {
+            Log.d(TAG, "Configuration changed, refreshing overlay");
+            // Use a slight delay to ensure display metrics are updated by the OS
+            handler.postDelayed(() -> {
+                if (isOverlayVisible && lastStartIntent != null) {
+                    showOverlay(lastStartIntent);
+                }
+            }, 500);
+        }
     }
 
     private void showOverlay(Intent intent) {

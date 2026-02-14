@@ -3,6 +3,8 @@ package com.widgethaus.openaodnotify;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.PowerManager;
@@ -11,6 +13,7 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,12 +24,20 @@ public class MainActivity extends AppCompatActivity {
 
     private Button btnOverlay, btnNotify, btnBattery, btnAppInfo, btnTestOverlay, btnAccessibility;
     private ImageButton btnSettings;
+    private TextView tvVersion;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        bindViews();
+        displayVersion();
+        setupListeners();
+        ensureListenerRunning();
+    }
+
+    private void bindViews() {
         btnOverlay = findViewById(R.id.btnOverlay);
         btnNotify = findViewById(R.id.btnNotify);
         btnBattery = findViewById(R.id.btnBattery);
@@ -34,7 +45,19 @@ public class MainActivity extends AppCompatActivity {
         btnSettings = findViewById(R.id.btnSettings);
         btnTestOverlay = findViewById(R.id.btnTestOverlay);
         btnAccessibility = findViewById(R.id.btnAccessibility);
+        tvVersion = findViewById(R.id.tvVersion);
+    }
 
+    private void displayVersion() {
+        try {
+            PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            tvVersion.setText("Version: " + pInfo.versionName);
+        } catch (PackageManager.NameNotFoundException e) {
+            tvVersion.setText("v1.1-dev");
+        }
+    }
+
+    private void setupListeners() {
         btnAppInfo.setOnClickListener(v -> {
             Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
             intent.setData(Uri.parse("package:" + getPackageName()));
@@ -51,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Please grant Overlay Permission first", Toast.LENGTH_SHORT).show();
                 return;
             }
-            if (!isAccessibilityServiceEnabled()) {
+            if (!PreferenceUtils.isAccessibilityServiceEnabled(this)) {
                 Toast.makeText(this, "Please grant Accessibility Permission first", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -75,12 +98,10 @@ public class MainActivity extends AppCompatActivity {
                 startService(stopIntent);
             }, 5000);
         });
-
-        ensureListenerRunning();
     }
 
     private void ensureListenerRunning() {
-        if (isNotificationAccessGranted()) {
+        if (PreferenceUtils.isNotificationAccessGranted(this)) {
             ComponentName componentName = new ComponentName(this, OpenAODListener.class);
             NotificationListenerService.requestRebind(componentName);
         }
@@ -93,8 +114,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateUI() {
-        // Step 2: Overlay
-        if (!canDrawOverlays()) {
+        if (!Settings.canDrawOverlays(this)) {
             btnOverlay.setVisibility(View.VISIBLE);
             btnOverlay.setOnClickListener(v -> {
                 Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -105,8 +125,7 @@ public class MainActivity extends AppCompatActivity {
             btnOverlay.setVisibility(View.GONE);
         }
 
-        // Step 3: Notification
-        if (!isNotificationAccessGranted()) {
+        if (!PreferenceUtils.isNotificationAccessGranted(this)) {
             btnNotify.setVisibility(View.VISIBLE);
             btnNotify.setOnClickListener(v -> {
                 Intent intent = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
@@ -116,8 +135,7 @@ public class MainActivity extends AppCompatActivity {
             btnNotify.setVisibility(View.GONE);
         }
 
-        // Step 4: Accessibility
-        if (!isAccessibilityServiceEnabled()) {
+        if (!PreferenceUtils.isAccessibilityServiceEnabled(this)) {
             btnAccessibility.setVisibility(View.VISIBLE);
             btnAccessibility.setOnClickListener(v -> {
                 Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
@@ -127,7 +145,6 @@ public class MainActivity extends AppCompatActivity {
             btnAccessibility.setVisibility(View.GONE);
         }
 
-        // Step 5: Battery
         if (isBatteryOptimized()) {
             btnBattery.setVisibility(View.VISIBLE);
             btnBattery.setOnClickListener(v -> {
@@ -140,38 +157,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private boolean isAccessibilityServiceEnabled() {
-        String service = getPackageName() + "/" + OpenAODOverlayService.class.getCanonicalName();
-        int enabled = 0;
-        try {
-            enabled = Settings.Secure.getInt(getContentResolver(), Settings.Secure.ACCESSIBILITY_ENABLED);
-        } catch (Settings.SettingNotFoundException ignored) {}
-
-        if (enabled == 1) {
-            String settingValue = Settings.Secure.getString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-            if (settingValue != null) {
-                TextUtils.SimpleStringSplitter splitter = new TextUtils.SimpleStringSplitter(':');
-                splitter.setString(settingValue);
-                while (splitter.hasNext()) {
-                    if (splitter.next().equalsIgnoreCase(service)) return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private boolean isNotificationAccessGranted() {
-        String pkgName = getPackageName();
-        String flat = Settings.Secure.getString(getContentResolver(), "enabled_notification_listeners");
-        return flat != null && flat.contains(pkgName);
-    }
-
     private boolean isBatteryOptimized() {
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         return !pm.isIgnoringBatteryOptimizations(getPackageName());
-    }
-
-    private boolean canDrawOverlays() {
-        return Settings.canDrawOverlays(this);
     }
 }

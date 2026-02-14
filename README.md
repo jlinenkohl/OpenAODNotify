@@ -3,20 +3,30 @@
 OpenAODNotify is a lightweight Android utility designed to simulate a notification LED/dot for devices without one, specifically targeting Always-On Display (AOD) environments.
 
 ## Features
-- **Customizable Overlays**: Choose between Circles, Squares, Rectangles, or Edge-based lines and borders.
-- **Breathing Effect**: High-efficiency, hardware-accelerated alpha pulsing (breathing) to minimize battery impact.
-- **Interactive Setup**: Drag the notification dot directly on your screen to position it perfectly (e.g., around a camera cutout).
-- **Material You Design**: Respects system light/dark themes and dynamic styling.
-- **Battery Mindful**: Uses minimal CPU by leveraging system-level animations and foreground service optimization.
+- **Customizable Overlays**: Circles, Squares, Rectangles, Rings, or Edge-based lines and full-screen borders.
+- **Privacy-First Design**: Minimal technical configuration ensures no user data, input, or screen content is monitored.
+- **Interactive Setup**: "Leashed Handle" system for precise drag-and-drop positioning, especially around camera cutouts.
+- **Settings Profiles**: Support for 3 independent configurations (Default, Profile 1, Profile 2).
+- **RGB Color Mixer**: Built-in, zero-dependency color picker for exact aesthetic control.
+- **Battery Mindful**: Uses hardware acceleration and efficient foreground management to minimize power impact.
+
+## Permissions & Privacy
+To function reliably on modern Android versions (14, 15+), the app requires three core permissions:
+
+1. **Notification Access**: To detect incoming messages and trigger the indicator.
+2. **Overlay Permission**: To draw the indicator over other apps.
+3. **Accessibility Service**: Required to "pierce" through the system's Always-on Display and Lockscreen layers.
+
+### Why Accessibility?
+Standard overlays are often hidden by the system when the screen is locked or in AOD mode. An Accessibility Overlay is the only reliable way to ensure your notification dot stays visible on top of the system's low-power screen.
+
+### Your Data is Safe
+The app is technically configured with `accessibilityEventTypes="typeNone"` and `accessibilityFeedbackType="feedbackNone"`. This means **it is technically incapable** of:
+- Reading your screen content or passwords.
+- Monitoring your typing or clicks.
+- Tracking your usage data.
 
 ## Getting Started
-1. **Permissions**: The app requires Overlay Permission (System Alert Window) and Notification Listener access to function.
-2. **Restricted Settings**: If sideloading on newer Android versions, you may need to "Allow Restricted Settings" in the Android App Info page.
-3. **Setup**: Follow the 4-step guide on the main screen to ensure all background services are correctly configured.
-
-## Usage
-Tap the **Settings Gear** to customize:
-- Shape and Size
-- Breathing speed and opacity range
-- Global timeout (how long the dot stays active)
-- Exact screen coordinates (via text or drag-and-drop)
+1. **Restricted Settings**: If sideloading, go to App Info > (⋮) Three dots > "Allow Restricted Settings" first.
+2. **Onboarding**: Follow the 5-step guide on the main screen to configure permissions.
+3. **Customize**: Tap the Settings Gear to mix your color, choose a shape, and nudge it into position.
