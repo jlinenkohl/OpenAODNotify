@@ -1,38 +1,23 @@
-# Collaboration Log: Gemini & OpenAODNotify
+# Developer Contract: Gemini & OpenAODNotify
 
-This document summarizes the development journey and collaboration between the developer and Gemini (AI Assistant) to help maintain context for future sessions.
+This document defines the technical constraints and project vision to ensure consistent AI collaboration.
 
 ## Project Vision
-Create a "1.1-dev" lightweight, high-performance notification overlay for Android (AOD-focused).
+A high-performance, privacy-first notification overlay for Android (AOD-focused). Current Version: `1.1-dev`.
 
-## Key Achievements & Collaborations
+## Technical Constraints & Standards
+- **Zero External Dependencies**: Use standard Android/Material components only. Avoid 3rd-party libraries.
+- **Privacy-First**: Accessibility Service must remain restricted (`typeNone`, `feedbackNone`, `canRetrieveWindowContent=false`).
+- **Action-Based Lifecycle**: Communication between components must use explicit `ACTION_START` and `ACTION_STOP` intents.
+- **Theme Integrity**: No hardcoded hex colors in layouts. Use theme attributes (`?attr/...`) to support system DayNight and Material You.
+- **Documentation Standard**: Follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Update `CHANGELOG.md` at the end of each feature block.
+- **Architectural Reference**: Store technical rationale ("The Why") and pitfalls in `ARCHITECTURE.md` for future reference.
+- **Git Convention**: Always output the proper Git CLI commands using [Conventional Commits](https://www.conventionalcommits.org/) (e.g., `feat:`, `fix:`, `docs:`) when ready to commit, build, or test.
 
-### 1. High-Priority Architecture (The AOD Pierce)
-- **Problem**: Standard `APPLICATION_OVERLAY` windows were occluded by the system's AOD/Lockscreen layers on physical devices (Android 15+).
-- **Solution**: Refactored the renderer into an **`AccessibilityService`** using `TYPE_ACCESSIBILITY_OVERLAY`. This provides the highest possible Z-order to remain visible over system layers.
-- **Lifecycle Fix**: Implemented an explicit `ACTION_START` and `ACTION_STOP` protocol to manage the persistent service.
-- **Translucent Hack**: Set window alpha to `0.99f` to force inclusion in the system's translucent AOD blending stack.
-
-### 2. Robust Notification & Timer Logic
-- **Problem**: Notification events were sometimes missed, and the timeout didn't refresh for concurrent messages.
-- **Solution**: 
-    - **Timer Extension**: Subsequent notifications now reset the countdown timer, keeping the indicator active for the full duration from the *last* message received.
-    - **Notification Grace Period**: Implemented a 5s window to ignore system "wake pulses," preventing premature indicator cleanup.
-    - **System Filtering**: Added logic to ignore permanent system notifications (e.g., `android`, `com.android.systemui`).
-
-### 3. Performance & Stability
-- **ANR Prevention**: Implemented state-based guards in the service to prevent redundant layout calculations and main-thread congestion during high notification traffic.
-- **Hardware Acceleration**: Re-enabled hardware rendering for large borders to resolve `ashmem` pinning errors while maintaining battery-friendly performance.
-- **Rotation Awareness**: Implemented `onConfigurationChanged` in the service to automatically refresh the overlay dimensions upon device rotation.
-
-### 4. Interactive UX & Onboarding
-- **Leashed Handle**: Created a gesture-safe drag-and-drop system using a "MOVE" tab that hangs below the shape.
-- **Integrated Setup**: Expanded the `MainActivity` onboarding to 5 steps, including direct deep-linking to Accessibility settings.
-- **Custom UI**: Built a lightweight RGB Mixer and numeric steppers to eliminate 3rd-party library dependencies.
-- **Version Tracking**: Integrated dynamic version display in `MainActivity` with automatic `-debug` suffix for dev builds.
-
-## Developer Notes for Gemini
-- **Architecture**: Logic is split between `OpenAODListener` (detection) and `OpenAODOverlayService` (rendering).
-- **Control Flow**: Communication between detection and rendering is strictly action-based (`ACTION_START`/`ACTION_STOP`).
-- **Targeting**: Min SDK 34 (Android 14), Target SDK 35 (Android 15).
-- **Versioning**: Current version is `1.1-dev`.
+## Service Priority Checklist (The AOD Pierce)
+When modifying the overlay, ensure these "Pierce" settings remain:
+1. Window Type: `TYPE_ACCESSIBILITY_OVERLAY`.
+2. Alpha: `0.99f` (forces translucent compositor pipeline).
+3. Cutout Mode: `LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS`.
+4. Insets: `setFitInsetsTypes(0)` (ignore system safe-zones).
+5. Rendering: `LAYER_TYPE_HARDWARE` for borders to avoid memory pinning issues.

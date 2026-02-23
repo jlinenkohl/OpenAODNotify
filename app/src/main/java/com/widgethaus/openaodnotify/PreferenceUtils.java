@@ -10,25 +10,31 @@ public class PreferenceUtils {
     public static final String KEY_CURRENT_PROFILE = "current_profile";
     public static final String PROFILE_DEFAULT = "default";
 
+    // Bitmasks for the LINES shape
+    public static final int SIDE_TOP = 1;
+    public static final int SIDE_BOTTOM = 2;
+    public static final int SIDE_LEFT = 4;
+    public static final int SIDE_RIGHT = 8;
+
     public enum ShapeType {
-        CIRCLE(0, true),
-        SQUARE(1, true),
-        RECTANGLE(2, true),
-        RING(3, true),
-        TOP_LINE(4, false),
-        FULL_BORDER(5, false),
-        VERTICAL_EDGES(6, false),
-        HORIZONTAL_EDGES(7, false);
+        CIRCLE(0, "Circle", true),
+        SQUARE(1, "Square", true),
+        RECTANGLE(2, "Rectangle", true),
+        RING(3, "Ring", true),
+        LINES(4, "Lines", false);
 
         private final int id;
+        private final String label;
         private final boolean isDraggable;
 
-        ShapeType(int id, boolean isDraggable) {
+        ShapeType(int id, String label, boolean isDraggable) {
             this.id = id;
+            this.label = label;
             this.isDraggable = isDraggable;
         }
 
         public int getId() { return id; }
+        public String getLabel() { return label; }
         public boolean isDraggable() { return isDraggable; }
 
         public static ShapeType fromId(int id) {
@@ -39,71 +45,111 @@ public class PreferenceUtils {
         }
     }
 
+    public static SharedPreferences getPrefs(Context context) {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+    }
+
+    private static String getPrefix(Context context) {
+        return getPrefs(context).getString(KEY_CURRENT_PROFILE, PROFILE_DEFAULT) + "_";
+    }
+
+    // New Shape-Aware Getters with Sane Defaults
+    public static int getShapeSize(Context context, ShapeType shape) {
+        String key = getPrefix(context) + shape.name() + "_size";
+        int def = 35;
+        if (shape == ShapeType.RING) def = 80;
+        if (shape == ShapeType.LINES) def = 5;
+        return getPrefs(context).getInt(key, def);
+    }
+
+    public static int getShapeX(Context context, ShapeType shape) {
+        return getPrefs(context).getInt(getPrefix(context) + shape.name() + "_x", 600);
+    }
+
+    public static int getShapeY(Context context, ShapeType shape) {
+        return getPrefs(context).getInt(getPrefix(context) + shape.name() + "_y", 325);
+    }
+
+    public static boolean isShapeRounded(Context context, ShapeType shape) {
+        return getPrefs(context).getBoolean(getPrefix(context) + shape.name() + "_rounded", true);
+    }
+
+    public static int getLineSides(Context context) {
+        // Defaults to Full Border (all 4 sides)
+        return getPrefs(context).getInt(getPrefix(context) + "LINES_sides", 15);
+    }
+
+    // Global Settings
+    public static String getColor(Context context) {
+        return getPrefs(context).getString(getPrefix(context) + "color", "0066ff");
+    }
+
+    public static int getDuration(Context context) {
+        return getPrefs(context).getInt(getPrefix(context) + "duration", 2000);
+    }
+
+    public static float getMinAlpha(Context context) {
+        return getPrefs(context).getFloat(getPrefix(context) + "min_alpha", 0.01f);
+    }
+
+    public static float getMaxAlpha(Context context) {
+        return getPrefs(context).getFloat(getPrefix(context) + "max_alpha", 0.99f);
+    }
+
+    public static int getTimeout(Context context) {
+        return getPrefs(context).getInt(getPrefix(context) + "timeout", 5);
+    }
+
+    public static ShapeType getCurrentShape(Context context) {
+        return ShapeType.fromId(getPrefs(context).getInt(getPrefix(context) + "current_shape", 0));
+    }
+
+    public static void saveGlobalSettings(Context context, String color, int duration, float min, float max, int timeout, int shapeId) {
+        SharedPreferences.Editor editor = getPrefs(context).edit();
+        String p = getPrefix(context);
+        editor.putString(p + "color", color);
+        editor.putInt(p + "duration", duration);
+        editor.putFloat(p + "min_alpha", min);
+        editor.putFloat(p + "max_alpha", max);
+        editor.putInt(p + "timeout", timeout);
+        editor.putInt(p + "current_shape", shapeId);
+        editor.apply();
+    }
+
+    public static void saveShapeSettings(Context context, ShapeType shape, int size, int x, int y, boolean rounded, int sides) {
+        SharedPreferences.Editor editor = getPrefs(context).edit();
+        String p = getPrefix(context) + shape.name() + "_";
+        editor.putInt(p + "size", size);
+        editor.putInt(p + "x", x);
+        editor.putInt(p + "y", y);
+        editor.putBoolean(p + "rounded", rounded);
+        if (shape == ShapeType.LINES) {
+            editor.putInt(getPrefix(context) + "LINES_sides", sides);
+        }
+        editor.apply();
+    }
+
     public static boolean isValidColor(String hex) {
         if (hex == null) return false;
         if (hex.startsWith("#")) hex = hex.substring(1);
         return hex.matches("^[0-9a-fA-F]{6}$");
     }
 
-    private static String p(Context context, String key) {
-        String profile = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                .getString(KEY_CURRENT_PROFILE, PROFILE_DEFAULT);
-        return profile + "_" + key;
-    }
-
-    public static SharedPreferences getPrefs(Context context) {
-        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-    }
-
-    public static void saveSettings(Context context, int timeout, String color, int x, int y, 
-                                    int size, int duration, float minAlpha, float maxAlpha, 
-                                    int shapeId, boolean rounded) {
-        SharedPreferences.Editor editor = getPrefs(context).edit();
-        String prefix = getPrefs(context).getString(KEY_CURRENT_PROFILE, PROFILE_DEFAULT) + "_";
-        
-        editor.putInt(prefix + "timeout", timeout);
-        editor.putString(prefix + "color", color.startsWith("#") ? color.substring(1) : color);
-        editor.putInt(prefix + "x", x);
-        editor.putInt(prefix + "y", y);
-        editor.putInt(prefix + "size", size);
-        editor.putInt(prefix + "duration", duration);
-        editor.putFloat(prefix + "min_alpha", minAlpha);
-        editor.putFloat(prefix + "max_alpha", maxAlpha);
-        editor.putInt(prefix + "shape", shapeId);
-        editor.putBoolean(prefix + "rounded", rounded);
-        editor.apply();
-    }
-    
-    public static int getInt(Context context, String key, int def) {
-        return getPrefs(context).getInt(p(context, key), def);
-    }
-    public static String getString(Context context, String key, String def) {
-        return getPrefs(context).getString(p(context, key), def);
-    }
-    public static float getFloat(Context context, String key, float def) {
-        return getPrefs(context).getFloat(p(context, key), def);
-    }
-    public static boolean getBoolean(Context context, String key, boolean def) {
-        return getPrefs(context).getBoolean(p(context, key), def);
-    }
-
     public static boolean isAccessibilityServiceEnabled(Context context) {
         String service = context.getPackageName() + "/" + OpenAODOverlayService.class.getCanonicalName();
-        int enabled = 0;
         try {
-            enabled = Settings.Secure.getInt(context.getContentResolver(), Settings.Secure.ACCESSIBILITY_ENABLED);
-        } catch (Settings.SettingNotFoundException ignored) {}
-
-        if (enabled == 1) {
-            String settingValue = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-            if (settingValue != null) {
-                TextUtils.SimpleStringSplitter splitter = new TextUtils.SimpleStringSplitter(':');
-                splitter.setString(settingValue);
-                while (splitter.hasNext()) {
-                    if (splitter.next().equalsIgnoreCase(service)) return true;
+            int enabled = Settings.Secure.getInt(context.getContentResolver(), Settings.Secure.ACCESSIBILITY_ENABLED);
+            if (enabled == 1) {
+                String settingValue = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+                if (settingValue != null) {
+                    TextUtils.SimpleStringSplitter splitter = new TextUtils.SimpleStringSplitter(':');
+                    splitter.setString(settingValue);
+                    while (splitter.hasNext()) {
+                        if (splitter.next().equalsIgnoreCase(service)) return true;
+                    }
                 }
             }
-        }
+        } catch (Exception ignored) {}
         return false;
     }
 

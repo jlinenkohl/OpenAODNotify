@@ -4,33 +4,34 @@
 
 ### 1. OpenAODListener (NotificationListenerService)
 The "Detection Engine". Monitors incoming system notifications.
-- **Responsibility**: Detects valid notifications (ignoring system/ongoing), tracks the "hasNotification" state, and manages the lifecycle of the overlay via Intent Actions (`START`/`STOP`).
+- **Responsibility**: Detects valid notifications (filtering system/ongoing), tracks "hasNotification" state, and manages the overlay lifecycle via `ACTION_START`/`ACTION_STOP`.
 - **Metadata Logging**: Upgraded to log deep metadata (Title, Category, Channel) for discovery of app-specific notification patterns.
-- **Lifecycle**: System-managed. Uses `requestRebind` for stability.
 
 ### 2. OpenAODOverlayService (AccessibilityService)
 The "High-Priority Renderer". Draws the visual indicator over all system layers.
-- **Why Accessibility?**: Provides the `TYPE_ACCESSIBILITY_OVERLAY` window type, which has the necessary Z-order to "pierce" through the Android AOD and Lockscreen layers.
-- **Orientation Support**: Automatically detects device rotation via `onConfigurationChanged` and refreshes overlay layout/dimensions to prevent distortion.
-- **Lifecycle**: Persistent. Responds to explicit `ACTION_START` and `ACTION_STOP` intents to manage view visibility.
+- **Z-Order**: Uses `TYPE_ACCESSIBILITY_OVERLAY` to pierce through AOD and Lockscreen layers.
+- **Orientation Support**: Automatically refreshes dimensions and layout upon device rotation via `onConfigurationChanged`.
+- **Performance**: Uses `LAYER_TYPE_HARDWARE` for borders and state-based guards to prevent main-thread congestion.
 
-### 3. SettingsActivity & MainActivity
-The "User Interface".
-- **MainActivity**: Guides the user through the 5-step setup. Displays dynamic versioning (with `-debug` suffix for dev builds).
-- **SettingsActivity**: Precision configuration with RGB Mixer, numeric steppers, and "Leashed Handle" positioning.
-
-### 4. BootReceiver
+### 3. BootReceiver
 The "Health Monitor".
-- **Responsibility**: Listens for `RECEIVE_BOOT_COMPLETED`. Automatically verifies permissions and restarts services after a device reboot. Posts high-priority alerts if critical access is lost.
+- **Responsibility**: Automatically verifies permissions and restarts services after a device reboot. Posts high-priority alerts if critical access is lost.
 
-### 5. PreferenceUtils
-The "Persistence Layer".
-- **Logic**: Centralized storage for 3 independent settings profiles (Default, Profile 1, Profile 2).
-- **Type Safety**: Uses the `ShapeType` Enum to manage visual configurations without magic integers.
+## Design Rationale & Decision Log (The "Why")
 
-## Data Flow
-1. User configures settings in `SettingsActivity`.
-2. `OpenAODListener` detects a notification and sends `ACTION_START` to `OpenAODOverlayService`.
-3. `OpenAODOverlayService` draws the high-priority overlay and begin the pulse.
-4. Subsequent notifications refresh the active timer.
-5. On phone unlock or notification dismissal, an `ACTION_STOP` is sent to clear the screen.
+### Accessibility Service vs. Foreground Service
+- **Decision**: Migrated renderer from Foreground Service to Accessibility Service.
+- **Reasoning**: In Android 15+, standard `APPLICATION_OVERLAY` windows are occluded by the system's AOD/Lockscreen layer. `TYPE_ACCESSIBILITY_OVERLAY` provides the necessary Z-order to stay on top.
+- **Pitfall**: Accessibility Services are persistent; required implementing a custom `ACTION_STOP` protocol to manually clear views since the service doesn't "stop" in the traditional sense.
+
+### Translucent Alpha Hack (0.99f)
+- **Decision**: Setting window alpha to `0.99f` instead of `1.0f`.
+- **Reasoning**: The Android compositor often optimizes opaque `1.0f` windows out of the AOD blending stack. Forcing `0.99f` ensures the window is included in the translucent drawing pipeline, piercing the AOD layer.
+
+### Leashed Handle for Drag-and-Drop
+- **Decision**: Added a "MOVE" handle leashed below the actual notification shape.
+- **Reasoning**: Small shapes near screen edges are difficult to grab because system gestures (status bar) take priority. The handle provides a safe touch target in a non-gesture zone.
+
+### Logic vs. Rendering Split
+- **Decision**: Separated notification detection (`Listener`) from visual rendering (`Service`).
+- **Reasoning**: Keeps the complex logic of notification filtering and state management isolated from the low-level WindowManager calls, making the app easier to test and port.

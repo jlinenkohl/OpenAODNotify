@@ -4,7 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:background="?android:attr/windowBackground">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -16,7 +17,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Settings Profile"
-            android:textAppearance="@style/TextAppearance.AppCompat.Caption" />
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:textColor="?android:attr/textColorSecondary" />
         <Spinner
             android:id="@+id/spnProfile"
             android:layout_width="match_parent"
@@ -35,6 +37,7 @@
             android:layout_height="wrap_content"
             android:text="Appearance Settings"
             android:textAppearance="@style/TextAppearance.AppCompat.Headline"
+            android:textColor="?android:attr/textColorPrimary"
             android:layout_marginBottom="16dp"/>
 
         <!-- SHAPE & ROUNDED TOGGLE -->
@@ -52,7 +55,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Shape"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Caption" />
+                    android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+                    android:textColor="?android:attr/textColorSecondary" />
                 <Spinner
                     android:id="@+id/spnShape"
                     android:layout_width="match_parent"
@@ -67,8 +71,34 @@
                 android:layout_marginStart="16dp"/>
         </LinearLayout>
 
-        <!-- GENERIC FIELD WITH STEPPER -->
-        <include layout="@layout/stepper_field" android:id="@+id/stepperSize"/>
+        <!-- LINE SIDES SELECTOR (Visible only for LINES shape) -->
+        <LinearLayout
+            android:id="@+id/layoutLineSides"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp"
+            android:background="?attr/colorSurface"
+            android:padding="12dp"
+            android:visibility="gone">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Active Sides"
+                android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+                android:textColor="?android:attr/textColorSecondary" />
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="2"
+                android:rowCount="2"
+                android:layout_marginTop="8dp">
+                <CheckBox android:id="@+id/cbTop" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Top" />
+                <CheckBox android:id="@+id/cbBottom" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bottom" />
+                <CheckBox android:id="@+id/cbLeft" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Left" />
+                <CheckBox android:id="@+id/cbRight" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Right" />
+            </GridLayout>
+        </LinearLayout>
 
         <!-- COLOR MIXER SECTION -->
         <LinearLayout
@@ -76,13 +106,15 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:layout_marginTop="16dp"
+            android:background="?attr/colorSurface"
             android:padding="12dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Color Mixer"
-                android:textAppearance="@style/TextAppearance.AppCompat.Caption"/>
+                android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+                android:textColor="?android:attr/textColorSecondary" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -103,148 +135,144 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:layout_marginStart="16dp"
-                    android:background="#0066ff" />
+                    android:background="?attr/colorPrimary" />
             </LinearLayout>
 
             <!-- RGB Sliders -->
-            <TextView android:text="Red" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:textSize="12sp"/>
+            <TextView android:text="Red" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:textSize="12sp" android:textColor="?android:attr/textColorPrimary"/>
             <SeekBar android:id="@+id/seek_red" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="255" />
 
-            <TextView android:text="Green" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textSize="12sp"/>
+            <TextView android:text="Green" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textSize="12sp" android:textColor="?android:attr/textColorPrimary"/>
             <SeekBar android:id="@+id/seek_green" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="255" />
 
-            <TextView android:text="Blue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textSize="12sp"/>
+            <TextView android:text="Blue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textSize="12sp" android:textColor="?android:attr/textColorPrimary"/>
             <SeekBar android:id="@+id/seek_blue" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="255" />
         </LinearLayout>
 
-        <!-- POSITIONING SECTION -->
+        <!-- GENERIC FIELD WITH STEPPER -->
+        <include layout="@layout/stepper_field" android:id="@+id/stepperSize"/>
+        <include layout="@layout/stepper_field" android:id="@+id/stepperDuration"/>
+        <include layout="@layout/stepper_field" android:id="@+id/stepperMinAlpha"/>
+        <include layout="@layout/stepper_field" android:id="@+id/stepperMaxAlpha"/>
+        <include layout="@layout/stepper_field" android:id="@+id/stepperTimeout"/>
 
+        <!-- POSITIONING SECTION -->
         <LinearLayout
             android:id="@+id/layoutPosition"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:layout_marginTop="16dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Positioning"
-                android:textAppearance="@style/TextAppearance.AppCompat.Caption" />
+                android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+                android:textColor="?android:attr/textColorSecondary" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical">
-
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="X Offset"
-                        android:textSize="10sp" />
-
+                        android:textSize="10sp"
+                        android:textColor="?android:attr/textColorPrimary"/>
                     <EditText
                         android:id="@+id/etX"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="25"
-                        android:inputType="numberSigned" />
+                        android:inputType="numberSigned"
+                        android:hint="600" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
                     android:layout_weight="1"
-                    android:orientation="vertical">
-
+                    android:orientation="vertical"
+                    android:layout_marginStart="8dp">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Y Offset"
-                        android:textSize="10sp" />
-
+                        android:textSize="10sp"
+                        android:textColor="?android:attr/textColorPrimary"/>
                     <EditText
                         android:id="@+id/etY"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="25"
-                        android:inputType="numberSigned" />
+                        android:inputType="numberSigned"
+                        android:hint="325" />
                 </LinearLayout>
 
                 <!-- NUDGE CONTROLS -->
                 <GridLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
                     android:columnCount="3"
-                    android:rowCount="2">
+                    android:rowCount="2"
+                    android:layout_marginStart="16dp">
 
-                    <View
-                        android:layout_width="32dp"
-                        android:layout_height="32dp" />
-
+                    <View android:layout_width="32dp" android:layout_height="32dp" />
                     <ImageButton
                         android:id="@+id/btnUp"
                         android:layout_width="32dp"
                         android:layout_height="32dp"
+                        android:src="@android:drawable/arrow_up_float"
                         android:background="?attr/selectableItemBackground"
-                        android:contentDescription="Up"
-                        android:src="@android:drawable/arrow_up_float" />
-
-                    <View
-                        android:layout_width="32dp"
-                        android:layout_height="32dp" />
+                        android:tint="?attr/colorOnSurface"
+                        android:contentDescription="Up" />
+                    <View android:layout_width="32dp" android:layout_height="32dp" />
 
                     <ImageButton
                         android:id="@+id/btnLeft"
                         android:layout_width="32dp"
                         android:layout_height="32dp"
-                        android:background="?attr/selectableItemBackground"
-                        android:contentDescription="Left"
+                        android:src="@android:drawable/arrow_down_float"
                         android:rotation="90"
-                        android:src="@android:drawable/arrow_down_float" />
-
+                        android:background="?attr/selectableItemBackground"
+                        android:tint="?attr/colorOnSurface"
+                        android:contentDescription="Left" />
                     <ImageButton
                         android:id="@+id/btnDown"
                         android:layout_width="32dp"
                         android:layout_height="32dp"
+                        android:src="@android:drawable/arrow_down_float"
                         android:background="?attr/selectableItemBackground"
-                        android:contentDescription="Down"
-                        android:src="@android:drawable/arrow_down_float" />
-
+                        android:tint="?attr/colorOnSurface"
+                        android:contentDescription="Down" />
                     <ImageButton
                         android:id="@+id/btnRight"
                         android:layout_width="32dp"
                         android:layout_height="32dp"
-                        android:background="?attr/selectableItemBackground"
-                        android:contentDescription="Right"
+                        android:src="@android:drawable/arrow_up_float"
                         android:rotation="90"
-                        android:src="@android:drawable/arrow_up_float" />
+                        android:background="?attr/selectableItemBackground"
+                        android:tint="?attr/colorOnSurface"
+                        android:contentDescription="Right" />
                 </GridLayout>
             </LinearLayout>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
                 android:text="Tip: Drag the handle or use arrows for fine-tuning."
                 android:textAppearance="@style/TextAppearance.AppCompat.Caption"
-                android:textColor="?android:attr/colorAccent"
+                android:textColor="?attr/colorAccent"
+                android:layout_marginTop="4dp"
                 android:textStyle="italic" />
         </LinearLayout>
-
-        <include layout="@layout/stepper_field" android:id="@+id/stepperDuration"/>
-        <include layout="@layout/stepper_field" android:id="@+id/stepperMinAlpha"/>
-        <include layout="@layout/stepper_field" android:id="@+id/stepperMaxAlpha"/>
-        <include layout="@layout/stepper_field" android:id="@+id/stepperTimeout"/>
 
         <Button
             android:id="@+id/btnSave"

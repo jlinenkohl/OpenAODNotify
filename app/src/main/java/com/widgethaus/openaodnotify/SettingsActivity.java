@@ -12,6 +12,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -32,16 +33,14 @@ public class SettingsActivity extends AppCompatActivity {
     private Spinner spnShape, spnProfile;
     private Button btnSave;
     private ImageButton btnUp, btnDown, btnLeft, btnRight;
-    private LinearLayout layoutPosition;
+    private LinearLayout layoutPosition, layoutLineSides;
+    private CheckBox cbTop, cbBottom, cbLeft, cbRight;
     private SwitchMaterial swRounded;
     private boolean isUpdatingFromBroadcast = false;
     private boolean isUpdatingFromSliders = false;
+    private boolean isInitializing = true;
 
-    private static final String[] SHAPES = {
-        "Circle", "Square", "Rectangle", "Ring", "Top Line", "Full Border", "Vertical Edges", "Horizontal Edges"
-    };
     private static final String[] PROFILES = {"Default", "Profile 1", "Profile 2"};
-
     private View stepperSize, stepperDuration, stepperMinAlpha, stepperMaxAlpha, stepperTimeout;
 
     private final BroadcastReceiver positionReceiver = new BroadcastReceiver() {
@@ -65,12 +64,15 @@ public class SettingsActivity extends AppCompatActivity {
 
         bindViews();
         setupSpinners();
-        loadSettings();
+        loadGlobalSettings();
+        loadShapeSettings(PreferenceUtils.getCurrentShape(this));
         setupListeners();
+        isInitializing = false;
     }
 
     private void bindViews() {
         spnProfile = findViewById(R.id.spnProfile);
+        spnShape = findViewById(R.id.spnShape);
         etX = findViewById(R.id.etX);
         etY = findViewById(R.id.etY);
         etColor = findViewById(R.id.etColor);
@@ -78,9 +80,13 @@ public class SettingsActivity extends AppCompatActivity {
         seekRed = findViewById(R.id.seek_red);
         seekGreen = findViewById(R.id.seek_green);
         seekBlue = findViewById(R.id.seek_blue);
-        spnShape = findViewById(R.id.spnShape);
         btnSave = findViewById(R.id.btnSave);
         layoutPosition = findViewById(R.id.layoutPosition);
+        layoutLineSides = findViewById(R.id.layoutLineSides);
+        cbTop = findViewById(R.id.cbTop);
+        cbBottom = findViewById(R.id.cbBottom);
+        cbLeft = findViewById(R.id.cbLeft);
+        cbRight = findViewById(R.id.cbRight);
         swRounded = findViewById(R.id.swRounded);
         btnUp = findViewById(R.id.btnUp);
         btnDown = findViewById(R.id.btnDown);
@@ -99,86 +105,114 @@ public class SettingsActivity extends AppCompatActivity {
         profileAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spnProfile.setAdapter(profileAdapter);
 
-        ArrayAdapter<String> shapeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, SHAPES);
+        PreferenceUtils.ShapeType[] shapes = PreferenceUtils.ShapeType.values();
+        String[] labels = new String[shapes.length];
+        for(int i=0; i<shapes.length; i++) labels[i] = shapes[i].getLabel();
+        
+        ArrayAdapter<String> shapeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, labels);
         shapeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spnShape.setAdapter(shapeAdapter);
     }
 
-    private void loadSettings() {
+    private void loadGlobalSettings() {
         String currentProfile = PreferenceUtils.getPrefs(this).getString(PreferenceUtils.KEY_CURRENT_PROFILE, PreferenceUtils.PROFILE_DEFAULT);
-        int profileIndex = 0;
         for (int i = 0; i < PROFILES.length; i++) {
             if (PROFILES[i].equalsIgnoreCase(currentProfile)) {
-                profileIndex = i;
+                spnProfile.setSelection(i);
                 break;
             }
         }
-        spnProfile.setSelection(profileIndex);
 
-        ((EditText) stepperTimeout.findViewById(R.id.etValue)).setText(String.valueOf(PreferenceUtils.getInt(this, "timeout", 5)));
-        String color = PreferenceUtils.getString(this, "color", "0066ff");
-        etColor.setText(color);
-        updateSlidersFromHex(color);
+        etColor.setText(PreferenceUtils.getColor(this));
+        updateSlidersFromHex(PreferenceUtils.getColor(this));
+        ((EditText) stepperDuration.findViewById(R.id.etValue)).setText(String.valueOf(PreferenceUtils.getDuration(this)));
+        ((EditText) stepperMinAlpha.findViewById(R.id.etValue)).setText(String.valueOf(PreferenceUtils.getMinAlpha(this)));
+        ((EditText) stepperMaxAlpha.findViewById(R.id.etValue)).setText(String.valueOf(PreferenceUtils.getMaxAlpha(this)));
+        ((EditText) stepperTimeout.findViewById(R.id.etValue)).setText(String.valueOf(PreferenceUtils.getTimeout(this)));
+        spnShape.setSelection(PreferenceUtils.getCurrentShape(this).getId());
+    }
+
+    private void loadShapeSettings(PreferenceUtils.ShapeType shape) {
+        ((EditText) stepperSize.findViewById(R.id.etValue)).setText(String.valueOf(PreferenceUtils.getShapeSize(this, shape)));
+        etX.setText(String.valueOf(PreferenceUtils.getShapeX(this, shape)));
+        etY.setText(String.valueOf(PreferenceUtils.getShapeY(this, shape)));
+        swRounded.setChecked(PreferenceUtils.isShapeRounded(this, shape));
         
-        etX.setText(String.valueOf(PreferenceUtils.getInt(this, "x", 64)));
-        etY.setText(String.valueOf(PreferenceUtils.getInt(this, "y", 64)));
-        ((EditText) stepperSize.findViewById(R.id.etValue)).setText(String.valueOf(PreferenceUtils.getInt(this, "size", 60)));
-        ((EditText) stepperDuration.findViewById(R.id.etValue)).setText(String.valueOf(PreferenceUtils.getInt(this, "duration", 2500)));
-        ((EditText) stepperMinAlpha.findViewById(R.id.etValue)).setText(String.valueOf(PreferenceUtils.getFloat(this, "min_alpha", 0.1f)));
-        ((EditText) stepperMaxAlpha.findViewById(R.id.etValue)).setText(String.valueOf(PreferenceUtils.getFloat(this, "max_alpha", 1.0f)));
-        swRounded.setChecked(PreferenceUtils.getBoolean(this, "rounded", true));
+        if (shape == PreferenceUtils.ShapeType.LINES) {
+            int sides = PreferenceUtils.getLineSides(this);
+            cbTop.setChecked((sides & PreferenceUtils.SIDE_TOP) != 0);
+            cbBottom.setChecked((sides & PreferenceUtils.SIDE_BOTTOM) != 0);
+            cbLeft.setChecked((sides & PreferenceUtils.SIDE_LEFT) != 0);
+            cbRight.setChecked((sides & PreferenceUtils.SIDE_RIGHT) != 0);
+        }
         
-        int shapeIndex = PreferenceUtils.getInt(this, "shape", 0);
-        spnShape.setSelection(shapeIndex);
-        updatePositionVisibility(PreferenceUtils.ShapeType.fromId(shapeIndex));
+        updateUIVisibility(shape);
+    }
+
+    private void updateUIVisibility(PreferenceUtils.ShapeType shape) {
+        layoutPosition.setVisibility(shape.isDraggable() ? View.VISIBLE : View.GONE);
+        layoutLineSides.setVisibility(shape == PreferenceUtils.ShapeType.LINES ? View.VISIBLE : View.GONE);
+        // Rounded applies to Rectangles and Lines (Borders)
+        swRounded.setVisibility(shape == PreferenceUtils.ShapeType.RECTANGLE || shape == PreferenceUtils.ShapeType.LINES ? View.VISIBLE : View.GONE);
     }
 
     private void setupListeners() {
         spnProfile.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                String selectedProfile = PROFILES[position];
-                PreferenceUtils.getPrefs(SettingsActivity.this).edit().putString(PreferenceUtils.KEY_CURRENT_PROFILE, selectedProfile).apply();
-                loadSettings();
+                if (isInitializing) return;
+                PreferenceUtils.getPrefs(SettingsActivity.this).edit().putString(PreferenceUtils.KEY_CURRENT_PROFILE, PROFILES[position]).apply();
+                loadGlobalSettings();
+                loadShapeSettings(PreferenceUtils.getCurrentShape(SettingsActivity.this));
             }
             @Override public void onNothingSelected(AdapterView<?> parent) {}
         });
 
-        TextWatcher textWatcher = new TextWatcher() {
+        spnShape.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (isInitializing) return;
+                PreferenceUtils.ShapeType newShape = PreferenceUtils.ShapeType.fromId(position);
+                loadShapeSettings(newShape);
+                updatePreview();
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        TextWatcher previewWatcher = new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override public void afterTextChanged(Editable s) { 
-                if (!isUpdatingFromBroadcast) {
-                    if (!isUpdatingFromSliders) {
-                        updateSlidersFromHex(s.toString());
-                    }
-                    updatePreview(); 
-                }
+                if (!isInitializing && !isUpdatingFromBroadcast) updatePreview(); 
             }
         };
 
-        etColor.addTextChangedListener(textWatcher);
-        etX.addTextChangedListener(textWatcher);
-        etY.addTextChangedListener(textWatcher);
-        swRounded.setOnCheckedChangeListener((buttonView, isChecked) -> updatePreview());
-
-        spnShape.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) { 
-                updatePositionVisibility(PreferenceUtils.ShapeType.fromId(position));
-                updatePreview(); 
+        etColor.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) {
+                if (!isUpdatingFromSliders) updateSlidersFromHex(s.toString());
+                if (!isInitializing) updatePreview();
             }
-            @Override public void onNothingSelected(AdapterView<?> parent) {}
         });
 
+        etX.addTextChangedListener(previewWatcher);
+        etY.addTextChangedListener(previewWatcher);
+        swRounded.setOnCheckedChangeListener((v, c) -> { if(!isInitializing) updatePreview(); });
+        
+        View.OnClickListener sideListener = v -> { if(!isInitializing) updatePreview(); };
+        cbTop.setOnClickListener(sideListener); cbBottom.setOnClickListener(sideListener);
+        cbLeft.setOnClickListener(sideListener); cbRight.setOnClickListener(sideListener);
+
         setupRGBListeners();
-        btnSave.setOnClickListener(v -> saveSettings());
+        btnSave.setOnClickListener(v -> saveAll());
         setupNudgeButtons();
         
-        setupStepper(stepperSize, "Size / Stroke (px)", 1, 1, 200, textWatcher);
-        setupStepper(stepperDuration, "Duration (ms)", 100, 100, 10000, textWatcher);
-        setupStepper(stepperMinAlpha, "Min Opacity (0.0-1.0)", 0.1f, 0.0f, 1.0f, textWatcher);
-        setupStepper(stepperMaxAlpha, "Max Opacity (0.0-1.0)", 0.1f, 0.0f, 1.0f, textWatcher);
-        setupStepper(stepperTimeout, "Timeout (minutes)", 1, 1, 720, textWatcher);
+        setupStepper(stepperSize, "Size / Thickness (px)", 1, 1, 200, previewWatcher);
+        setupStepper(stepperDuration, "Duration (ms)", 100, 100, 10000, previewWatcher);
+        setupStepper(stepperMinAlpha, "Min Opacity", 0.01f, 0.0f, 1.0f, previewWatcher);
+        setupStepper(stepperMaxAlpha, "Max Opacity", 0.01f, 0.0f, 1.0f, previewWatcher);
+        setupStepper(stepperTimeout, "Timeout (min)", 1, 1, 720, previewWatcher);
     }
 
     private void setupRGBListeners() {
@@ -221,43 +255,37 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void setupStepper(View layout, String label, float step, float min, float max, TextWatcher watcher) {
-        TextView tvLabel = layout.findViewById(R.id.tvLabel);
-        EditText etValue = layout.findViewById(R.id.etValue);
-        ImageButton btnMinus = layout.findViewById(R.id.btnMinus);
-        ImageButton btnPlus = layout.findViewById(R.id.btnPlus);
-
-        tvLabel.setText(label);
-        etValue.addTextChangedListener(watcher);
-
-        btnMinus.setOnClickListener(v -> {
+        ((TextView) layout.findViewById(R.id.tvLabel)).setText(label);
+        EditText et = layout.findViewById(R.id.etValue);
+        et.addTextChangedListener(watcher);
+        layout.findViewById(R.id.btnMinus).setOnClickListener(v -> {
             try {
-                float val = Float.parseFloat(etValue.getText().toString());
-                val = Math.max(min, val - step);
-                etValue.setText(String.valueOf(val));
+                float val = Float.parseFloat(et.getText().toString());
+                et.setText(String.valueOf(Math.max(min, val - step)));
             } catch (Exception ignored) {}
         });
-
-        btnPlus.setOnClickListener(v -> {
+        layout.findViewById(R.id.btnPlus).setOnClickListener(v -> {
             try {
-                float val = Float.parseFloat(etValue.getText().toString());
-                val = Math.min(max, val + step);
-                etValue.setText(String.valueOf(val));
+                float val = Float.parseFloat(et.getText().toString());
+                et.setText(String.valueOf(Math.min(max, val + step)));
             } catch (Exception ignored) {}
         });
     }
 
     private void nudge(int dx, int dy) {
         try {
-            int x = Integer.parseInt(etX.getText().toString()) + dx;
-            int y = Integer.parseInt(etY.getText().toString()) + dy;
-            etX.setText(String.valueOf(x));
-            etY.setText(String.valueOf(y));
-        } catch (NumberFormatException ignored) {}
+            etX.setText(String.valueOf(Integer.parseInt(etX.getText().toString()) + dx));
+            etY.setText(String.valueOf(Integer.parseInt(etY.getText().toString()) + dy));
+        } catch (Exception ignored) {}
     }
 
-    private void updatePositionVisibility(PreferenceUtils.ShapeType shapeType) {
-        layoutPosition.setVisibility(shapeType.isDraggable() ? View.VISIBLE : View.GONE);
-        swRounded.setVisibility(shapeType == PreferenceUtils.ShapeType.RECTANGLE || shapeType == PreferenceUtils.ShapeType.FULL_BORDER ? View.VISIBLE : View.GONE);
+    private int getSelectedSides() {
+        int sides = 0;
+        if (cbTop.isChecked()) sides |= PreferenceUtils.SIDE_TOP;
+        if (cbBottom.isChecked()) sides |= PreferenceUtils.SIDE_BOTTOM;
+        if (cbLeft.isChecked()) sides |= PreferenceUtils.SIDE_LEFT;
+        if (cbRight.isChecked()) sides |= PreferenceUtils.SIDE_RIGHT;
+        return sides;
     }
 
     private void updatePreview() {
@@ -274,32 +302,31 @@ public class SettingsActivity extends AppCompatActivity {
             intent.putExtra("min_alpha", Float.parseFloat(((EditText) stepperMinAlpha.findViewById(R.id.etValue)).getText().toString()));
             intent.putExtra("max_alpha", Float.parseFloat(((EditText) stepperMaxAlpha.findViewById(R.id.etValue)).getText().toString()));
             intent.putExtra("rounded", swRounded.isChecked());
+            intent.putExtra("sides", getSelectedSides());
             startService(intent);
         } catch (Exception ignored) {}
     }
 
-    private void saveSettings() {
+    private void saveAll() {
         try {
-            PreferenceUtils.saveSettings(
-                this,
-                (int)Float.parseFloat(((EditText) stepperTimeout.findViewById(R.id.etValue)).getText().toString()),
-                etColor.getText().toString(),
-                Integer.parseInt(etX.getText().toString()),
-                Integer.parseInt(etY.getText().toString()),
-                (int)Float.parseFloat(((EditText) stepperSize.findViewById(R.id.etValue)).getText().toString()),
+            PreferenceUtils.ShapeType currentShape = PreferenceUtils.ShapeType.fromId(spnShape.getSelectedItemPosition());
+            PreferenceUtils.saveGlobalSettings(this, etColor.getText().toString(), 
                 (int)Float.parseFloat(((EditText) stepperDuration.findViewById(R.id.etValue)).getText().toString()),
                 Float.parseFloat(((EditText) stepperMinAlpha.findViewById(R.id.etValue)).getText().toString()),
                 Float.parseFloat(((EditText) stepperMaxAlpha.findViewById(R.id.etValue)).getText().toString()),
-                spnShape.getSelectedItemPosition(),
-                swRounded.isChecked()
-            );
+                (int)Float.parseFloat(((EditText) stepperTimeout.findViewById(R.id.etValue)).getText().toString()),
+                currentShape.getId());
+            
+            PreferenceUtils.saveShapeSettings(this, currentShape,
+                (int)Float.parseFloat(((EditText) stepperSize.findViewById(R.id.etValue)).getText().toString()),
+                Integer.parseInt(etX.getText().toString()),
+                Integer.parseInt(etY.getText().toString()),
+                swRounded.isChecked(), getSelectedSides());
 
             Toast.makeText(this, "Settings Saved", Toast.LENGTH_SHORT).show();
             stopOverlayService();
             finish();
-        } catch (NumberFormatException e) {
-            Toast.makeText(this, "Please check your inputs", Toast.LENGTH_SHORT).show();
-        }
+        } catch (Exception e) { Toast.makeText(this, "Check inputs", Toast.LENGTH_SHORT).show(); }
     }
 
     private void stopOverlayService() {
@@ -308,25 +335,18 @@ public class SettingsActivity extends AppCompatActivity {
         startService(intent);
     }
 
-    @Override
-    protected void onResume() {
+    @Override protected void onResume() {
         super.onResume();
-        IntentFilter filter = new IntentFilter(OpenAODOverlayService.ACTION_POSITION_UPDATE);
-        registerReceiver(positionReceiver, filter, Context.RECEIVER_EXPORTED);
-        loadSettings();
+        registerReceiver(positionReceiver, new IntentFilter(OpenAODOverlayService.ACTION_POSITION_UPDATE), Context.RECEIVER_EXPORTED);
     }
 
-    @Override
-    protected void onPause() {
+    @Override protected void onPause() {
         super.onPause();
         unregisterReceiver(positionReceiver);
-        if (isFinishing()) {
-            stopOverlayService();
-        }
+        if (isFinishing()) stopOverlayService();
     }
 
-    @Override
-    protected void onDestroy() {
+    @Override protected void onDestroy() {
         stopOverlayService();
         super.onDestroy();
     }

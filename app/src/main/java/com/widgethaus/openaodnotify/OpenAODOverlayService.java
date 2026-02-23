@@ -2,13 +2,11 @@ package com.widgethaus.openaodnotify;
 
 import android.accessibilityservice.AccessibilityService;
 import android.animation.ObjectAnimator;
-import android.animation.ValueAnimator;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
-import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.GradientDrawable;
@@ -56,7 +54,6 @@ public class OpenAODOverlayService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
-        Log.d(TAG, "Accessibility Service Connected");
         wm = (WindowManager) getSystemService(WINDOW_SERVICE);
     }
 
@@ -97,35 +94,19 @@ public class OpenAODOverlayService extends AccessibilityService {
         if (intent != null) {
             String action = intent.getAction();
             if (ACTION_STOP.equals(action)) {
-                Log.d(TAG, "Manual Stop requested");
                 cleanupViews();
                 lastStartIntent = null;
             } else {
                 lastStartIntent = intent;
                 boolean isPreview = intent.getBooleanExtra("preview", false);
                 if (!isPreview && isOverlayVisible) {
-                    Log.d(TAG, "Overlay already active, refreshing timeout");
-                    startTimeout(PreferenceUtils.getInt(this, "timeout", 5));
+                    startTimeout(PreferenceUtils.getTimeout(this));
                     return START_STICKY;
                 }
                 showOverlay(intent);
             }
         }
         return START_STICKY;
-    }
-
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        if (isOverlayVisible && lastStartIntent != null) {
-            Log.d(TAG, "Configuration changed, refreshing overlay");
-            // Use a slight delay to ensure display metrics are updated by the OS
-            handler.postDelayed(() -> {
-                if (isOverlayVisible && lastStartIntent != null) {
-                    showOverlay(lastStartIntent);
-                }
-            }, 500);
-        }
     }
 
     private void showOverlay(Intent intent) {
@@ -135,27 +116,28 @@ public class OpenAODOverlayService extends AccessibilityService {
         Bundle extras = intent.getExtras();
         boolean isPreview = extras != null && extras.getBoolean("preview", false);
         
-        int shapeId = isPreview ? extras.getInt("shape") : PreferenceUtils.getInt(this, "shape", 0);
-        PreferenceUtils.ShapeType shapeType = PreferenceUtils.ShapeType.fromId(shapeId);
+        PreferenceUtils.ShapeType shapeType = isPreview ? 
+                PreferenceUtils.ShapeType.fromId(extras.getInt("shape")) : PreferenceUtils.getCurrentShape(this);
         
-        int size = isPreview ? extras.getInt("size") : PreferenceUtils.getInt(this, "size", 60);
-        String colorHex = isPreview ? extras.getString("color") : PreferenceUtils.getString(this, "color", "0066ff");
-        int duration = isPreview ? extras.getInt("duration") : PreferenceUtils.getInt(this, "duration", 2500);
-        float minAlpha = isPreview ? extras.getFloat("min_alpha") : PreferenceUtils.getFloat(this, "min_alpha", 0.1f);
-        float maxAlpha = isPreview ? extras.getFloat("max_alpha") : PreferenceUtils.getFloat(this, "max_alpha", 1.0f);
-        boolean rounded = isPreview ? extras.getBoolean("rounded") : PreferenceUtils.getBoolean(this, "rounded", true);
+        int size = isPreview ? extras.getInt("size") : PreferenceUtils.getShapeSize(this, shapeType);
+        String colorHex = isPreview ? extras.getString("color") : PreferenceUtils.getColor(this);
+        int duration = isPreview ? extras.getInt("duration") : PreferenceUtils.getDuration(this);
+        float minAlpha = isPreview ? extras.getFloat("min_alpha") : PreferenceUtils.getMinAlpha(this);
+        float maxAlpha = isPreview ? extras.getFloat("max_alpha") : PreferenceUtils.getMaxAlpha(this);
+        boolean rounded = isPreview ? extras.getBoolean("rounded") : PreferenceUtils.isShapeRounded(this, shapeType);
 
         if (shapeType.isDraggable()) {
-            int x = isPreview ? extras.getInt("x") : PreferenceUtils.getInt(this, "x", 64);
-            int y = isPreview ? extras.getInt("y") : PreferenceUtils.getInt(this, "y", 64);
+            int x = isPreview ? extras.getInt("x") : PreferenceUtils.getShapeX(this, shapeType);
+            int y = isPreview ? extras.getInt("y") : PreferenceUtils.getShapeY(this, shapeType);
             createDraggableShape(shapeType, size, x, y, isPreview, colorHex, rounded, minAlpha, maxAlpha, duration);
         } else {
-            createComplexShape(shapeType, size, colorHex, rounded, minAlpha, maxAlpha, duration);
+            int sides = isPreview ? extras.getInt("sides") : PreferenceUtils.getLineSides(this);
+            createLineShape(size, colorHex, rounded, sides, minAlpha, maxAlpha, duration);
         }
         
         isOverlayVisible = true;
         if (!isPreview) {
-            startTimeout(PreferenceUtils.getInt(this, "timeout", 5));
+            startTimeout(PreferenceUtils.getTimeout(this));
         }
     }
 
@@ -275,24 +257,17 @@ public class OpenAODOverlayService extends AccessibilityService {
         });
     }
 
-    private void createComplexShape(PreferenceUtils.ShapeType shapeType, int thickness, String colorHex, boolean rounded,
-                                   float minAlpha, float maxAlpha, int duration) {
-        if (shapeType == PreferenceUtils.ShapeType.FULL_BORDER) {
-            createFullBorder(thickness, colorHex, rounded, minAlpha, maxAlpha, duration);
+    private void createLineShape(int thickness, String colorHex, boolean rounded, int sides, float min, float max, int dur) {
+        // If all 4 sides selected, use the optimized Full Border
+        if (sides == 15) {
+            createFullBorder(thickness, colorHex, rounded, min, max, dur);
             return;
         }
-        switch (shapeType) {
-            case TOP_LINE: createLine(shapeType, thickness, Gravity.TOP, colorHex, minAlpha, maxAlpha, duration); break;
-            case VERTICAL_EDGES: 
-                createLine(shapeType, thickness, Gravity.LEFT, colorHex, minAlpha, maxAlpha, duration);
-                createLine(shapeType, thickness, Gravity.RIGHT, colorHex, minAlpha, maxAlpha, duration);
-                break;
-            case HORIZONTAL_EDGES:
-                createLine(shapeType, thickness, Gravity.TOP, colorHex, minAlpha, maxAlpha, duration);
-                createLine(shapeType, thickness, Gravity.BOTTOM, colorHex, minAlpha, maxAlpha, duration);
-                break;
-            default: break;
-        }
+
+        if ((sides & PreferenceUtils.SIDE_TOP) != 0) createIndividualLine(thickness, Gravity.TOP, colorHex, min, max, dur);
+        if ((sides & PreferenceUtils.SIDE_BOTTOM) != 0) createIndividualLine(thickness, Gravity.BOTTOM, colorHex, min, max, dur);
+        if ((sides & PreferenceUtils.SIDE_LEFT) != 0) createIndividualLine(thickness, Gravity.LEFT, colorHex, min, max, dur);
+        if ((sides & PreferenceUtils.SIDE_RIGHT) != 0) createIndividualLine(thickness, Gravity.RIGHT, colorHex, min, max, dur);
     }
 
     private void createFullBorder(int thickness, String colorHex, boolean rounded, float minAlpha, float maxAlpha, int duration) {
@@ -319,8 +294,7 @@ public class OpenAODOverlayService extends AccessibilityService {
         } catch (Exception e) { Log.e(TAG, "Error adding border", e); }
     }
 
-    private void createLine(PreferenceUtils.ShapeType shapeType, int thickness, int gravity, String colorHex, 
-                           float minAlpha, float maxAlpha, int duration) {
+    private void createIndividualLine(int thickness, int gravity, String colorHex, float min, float max, int dur) {
         DisplayMetrics metrics = new DisplayMetrics();
         wm.getDefaultDisplay().getRealMetrics(metrics);
         WindowManager.LayoutParams params = getBaseParams();
@@ -332,20 +306,20 @@ public class OpenAODOverlayService extends AccessibilityService {
         View line = new View(this);
         line.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         line.setBackgroundColor(Color.parseColor("#" + colorHex));
-        line.setAlpha(maxAlpha);
+        line.setAlpha(max);
 
         try {
             wm.addView(line, params);
             overlayRoots.add(line);
-            startBreathing(line, minAlpha, maxAlpha, duration);
+            startBreathing(line, min, max, dur);
         } catch (Exception e) { Log.e(TAG, "Error adding line", e); }
     }
 
     private void startBreathing(View view, float minAlpha, float maxAlpha, int duration) {
         ObjectAnimator animator = ObjectAnimator.ofFloat(view, "alpha", maxAlpha, minAlpha);
         animator.setDuration(duration);
-        animator.setRepeatMode(ValueAnimator.REVERSE);
-        animator.setRepeatCount(ValueAnimator.INFINITE);
+        animator.setRepeatMode(ObjectAnimator.REVERSE);
+        animator.setRepeatCount(ObjectAnimator.INFINITE);
         animator.start();
         animators.add(animator);
     }
@@ -357,7 +331,6 @@ public class OpenAODOverlayService extends AccessibilityService {
     }
 
     private void cleanupViews() {
-        Log.d(TAG, "Cleaning up views");
         for (ObjectAnimator animator : animators) animator.cancel();
         animators.clear();
         for (View root : overlayRoots) {
@@ -370,7 +343,6 @@ public class OpenAODOverlayService extends AccessibilityService {
     @Override
     public void onDestroy() {
         cleanupViews();
-        if (timeoutRunnable != null) handler.removeCallbacks(timeoutRunnable);
         super.onDestroy();
     }
 }
