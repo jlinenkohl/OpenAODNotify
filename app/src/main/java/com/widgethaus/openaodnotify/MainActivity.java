@@ -3,13 +3,15 @@ package com.widgethaus.openaodnotify;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
-import android.text.TextUtils;
+import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -17,12 +19,22 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
 
 import android.service.notification.NotificationListenerService;
 
-public class MainActivity extends AppCompatActivity {
+import org.json.JSONObject;
 
-    private Button btnOverlay, btnNotify, btnBattery, btnAppInfo, btnTestOverlay, btnAccessibility;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.util.Map;
+
+public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "MainActivity";
+
+    private Button btnOverlay, btnNotify, btnBattery, btnAppInfo, btnTestOverlay, btnAccessibility, btnExportLogs, btnReset;
     private ImageButton btnSettings;
     private TextView tvVersion;
 
@@ -45,6 +57,8 @@ public class MainActivity extends AppCompatActivity {
         btnSettings = findViewById(R.id.btnSettings);
         btnTestOverlay = findViewById(R.id.btnTestOverlay);
         btnAccessibility = findViewById(R.id.btnAccessibility);
+        btnExportLogs = findViewById(R.id.btnExportLogs);
+        btnReset = findViewById(R.id.btnReset);
         tvVersion = findViewById(R.id.tvVersion);
     }
 
@@ -98,6 +112,94 @@ public class MainActivity extends AppCompatActivity {
                 startService(stopIntent);
             }, 5000);
         });
+
+        btnExportLogs.setOnClickListener(v -> exportLogs());
+        btnReset.setOnClickListener(v -> resetAndInitialize());
+    }
+
+    private void resetAndInitialize() {
+        Log.d(TAG, "🚀 Full Reset & Initialization Triggered");
+        dumpDebugInfo();
+
+        // 1. Force clear the overlay
+        Intent stopIntent = new Intent(this, OpenAODOverlayService.class);
+        stopIntent.setAction(OpenAODOverlayService.ACTION_STOP);
+        startService(stopIntent);
+
+        // 2. Refresh the notification listener binding
+        if (PreferenceUtils.isNotificationAccessGranted(this)) {
+            ComponentName componentName = new ComponentName(this, OpenAODListener.class);
+            getPackageManager().setComponentEnabledSetting(componentName, 
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+            getPackageManager().setComponentEnabledSetting(componentName, 
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
+            
+            NotificationListenerService.requestRebind(componentName);
+            Log.d(TAG, "Listener component toggled and rebind requested");
+        }
+
+        Toast.makeText(this, "Reset complete. Checking Logcat for debug dump...", Toast.LENGTH_LONG).show();
+    }
+
+    private void dumpDebugInfo() {
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+        Log.d(TAG, "--- DEBUG DUMP ---");
+        Log.d(TAG, "Version: " + tvVersion.getText());
+        Log.d(TAG, "Screen: " + metrics.widthPixels + "x" + metrics.heightPixels + " (Density: " + metrics.density + ")");
+        Log.d(TAG, "Overlay Permission: " + Settings.canDrawOverlays(this));
+        Log.d(TAG, "Accessibility Enabled: " + PreferenceUtils.isAccessibilityServiceEnabled(this));
+        Log.d(TAG, "Notification Access: " + PreferenceUtils.isNotificationAccessGranted(this));
+        Log.d(TAG, "Has Notification State: " + OpenAODListener.hasNotification);
+        
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        Log.d(TAG, "Is Screen On (Interactive): " + (pm != null && pm.isInteractive()));
+        
+        Log.d(TAG, "Current Settings (JSON): " + getSettingsAsJson());
+        Log.d(TAG, "-------------------");
+    }
+
+    private String getSettingsAsJson() {
+        try {
+            SharedPreferences prefs = PreferenceUtils.getPrefs(this);
+            Map<String, ?> allEntries = prefs.getAll();
+            JSONObject json = new JSONObject();
+            for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
+                json.put(entry.getKey(), entry.getValue());
+            }
+            return json.toString(2);
+        } catch (Exception e) {
+            return "Error serializing settings: " + e.getMessage();
+        }
+    }
+
+    private void exportLogs() {
+        try {
+            Process process = Runtime.getRuntime().exec("logcat -d");
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+            StringBuilder log = new StringBuilder();
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                if (line.contains("OpenAOD") || line.contains("Notification") || line.contains(TAG)) {
+                    log.append(line).append("\n");
+                }
+            }
+
+            File logFile = new File(getExternalFilesDir(null), "openaod_debug_logs.txt");
+            FileOutputStream fos = new FileOutputStream(logFile);
+            fos.write(log.toString().getBytes());
+            fos.close();
+
+            Uri contentUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", logFile);
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("text/plain");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(shareIntent, "Share Debug Logs"));
+
+        } catch (Exception e) {
+            Toast.makeText(this, "Export failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     private void ensureListenerRunning() {

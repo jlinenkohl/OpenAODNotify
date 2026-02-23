@@ -137,27 +137,51 @@
                 android:backgroundTint="#FBBC05"
                 android:textColor="#000000"/>
 
-            <View
+            <!-- DEBUG TOOLS SECTION -->
+            <LinearLayout
+                android:id="@+id/layoutDebugTools"
                 android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="#333333"
-                android:layout_marginBottom="24dp"/>
-
-            <TextView
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Testing"
-                android:textColor="#FFFFFF"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
+                android:orientation="vertical">
 
-            <Button
-                android:id="@+id/btnTestOverlay"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:text="Test AOD Breathing"
-                android:backgroundTint="#E91E63"/>
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#333333"
+                    android:layout_marginBottom="24dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Testing &amp; Support"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp"/>
+
+                <Button
+                    android:id="@+id/btnTestOverlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:text="Test AOD Breathing"
+                    android:layout_marginBottom="12dp"
+                    android:backgroundTint="#E91E63"/>
+
+                <Button
+                    android:id="@+id/btnReset"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:text="Reset &amp; Initialize"
+                    android:layout_marginBottom="12dp"
+                    android:backgroundTint="#FF9800"/>
+
+                <Button
+                    android:id="@+id/btnExportLogs"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:text="Export Debug Logs"
+                    android:backgroundTint="#607D8B"/>
+            </LinearLayout>
 
         </LinearLayout>
     </ScrollView>
