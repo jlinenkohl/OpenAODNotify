@@ -129,6 +129,23 @@ public class PreferenceUtils {
         editor.apply();
     }
 
+    // Generic accessor methods requested
+    public static int getInt(Context context, String key, int def) {
+        return getPrefs(context).getInt(getPrefix(context) + key, def);
+    }
+
+    public static String getString(Context context, String key, String def) {
+        return getPrefs(context).getString(getPrefix(context) + key, def);
+    }
+
+    public static float getFloat(Context context, String key, float def) {
+        return getPrefs(context).getFloat(getPrefix(context) + key, def);
+    }
+
+    public static boolean getBoolean(Context context, String key, boolean def) {
+        return getPrefs(context).getBoolean(getPrefix(context) + key, def);
+    }
+
     public static boolean isValidColor(String hex) {
         if (hex == null) return false;
         if (hex.startsWith("#")) hex = hex.substring(1);
