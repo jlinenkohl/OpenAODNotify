@@ -11,9 +11,10 @@
 
     <application
         android:label="OpenAODNotify"
-        android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
+        android:theme="@style/Theme.OpenAODNotify">
 
         <activity android:name=".MainActivity"
+            android:theme="@style/Theme.OpenAODNotify"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,6 +24,7 @@
 
         <activity android:name=".SettingsActivity"
             android:label="Settings"
+            android:theme="@style/Theme.OpenAODNotify"
             android:exported="false" />
 
         <service android:name=".OpenAODListener"
@@ -53,6 +55,16 @@
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 </manifest>

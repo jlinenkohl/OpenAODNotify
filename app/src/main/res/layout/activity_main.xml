@@ -9,9 +9,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:minHeight="?attr/actionBarSize"
-        android:background="?attr/colorSurfaceVariant"
+        android:background="?attr/colorSurface"
         android:elevation="4dp"
-        android:theme="@style/ThemeOverlay.AppCompat.DayNight.ActionBar"
         android:fitsSystemWindows="true">
 
         <RelativeLayout
@@ -22,7 +21,7 @@
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:text="OpenAODNotify"
-                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textColor="?attr/colorOnSurface"
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
@@ -35,14 +34,14 @@
                 android:layout_marginEnd="16dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@android:drawable/ic_menu_preferences"
-                android:tint="?attr/colorOnSurfaceVariant"
                 android:contentDescription="Settings" />
         </RelativeLayout>
     </androidx.appcompat.widget.Toolbar>
 
     <ScrollView
+        android:id="@+id/mainScrollView"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_height="match_parent"
         android:layout_below="@id/toolbar"
         android:layout_above="@+id/tvVersion"
         android:padding="24dp">
@@ -74,7 +73,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="?attr/colorSurface"
+                android:background="?attr/colorSurfaceVariant"
                 android:padding="16dp"
                 android:layout_marginBottom="16dp">
 
@@ -98,7 +97,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:text="Open App Info"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"/>
+                    style="@style/Widget.Material3.Button.TextButton"/>
             </LinearLayout>
 
             <!-- STEP 2: OVERLAY PERMISSION -->
@@ -169,14 +168,14 @@
                     android:layout_height="60dp"
                     android:text="Reset &amp; Initialize"
                     android:layout_marginBottom="12dp"
-                    android:backgroundTint="?attr/colorSecondary"/>
+                    android:backgroundTint="?attr/colorTertiary"/>
 
                 <Button
                     android:id="@+id/btnExportLogs"
                     android:layout_width="match_parent"
                     android:layout_height="60dp"
                     android:text="Export Debug Logs"
-                    android:backgroundTint="?attr/colorPrimaryVariant"/>
+                    android:backgroundTint="?attr/colorSecondary"/>
             </LinearLayout>
 
         </LinearLayout>
