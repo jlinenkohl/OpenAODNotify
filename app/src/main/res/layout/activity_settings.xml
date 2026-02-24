@@ -12,6 +12,26 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <!-- UI THEME SELECTOR -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="App UI Style"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:textColor="?android:attr/textColorSecondary" />
+        <Spinner
+            android:id="@+id/spnUITheme"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?android:attr/listDivider"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp" />
+
         <!-- PROFILE SELECTOR -->
         <TextView
             android:layout_width="wrap_content"
@@ -138,7 +158,6 @@
                     android:background="?attr/colorPrimary" />
             </LinearLayout>
 
-            <!-- RGB Sliders -->
             <TextView android:text="Red" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:textSize="12sp" android:textColor="?android:attr/textColorPrimary"/>
             <SeekBar android:id="@+id/seek_red" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="255" />
 
@@ -216,14 +235,12 @@
                         android:hint="325" />
                 </LinearLayout>
 
-                <!-- NUDGE CONTROLS -->
                 <GridLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:columnCount="3"
                     android:rowCount="2"
                     android:layout_marginStart="16dp">
-
                     <View android:layout_width="32dp" android:layout_height="32dp" />
                     <ImageButton
                         android:id="@+id/btnUp"
@@ -234,7 +251,6 @@
                         android:tint="?attr/colorOnSurface"
                         android:contentDescription="Up" />
                     <View android:layout_width="32dp" android:layout_height="32dp" />
-
                     <ImageButton
                         android:id="@+id/btnLeft"
                         android:layout_width="32dp"

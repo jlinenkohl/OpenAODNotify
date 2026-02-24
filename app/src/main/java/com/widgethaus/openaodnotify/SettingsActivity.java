@@ -30,7 +30,7 @@ public class SettingsActivity extends AppCompatActivity {
     private EditText etX, etY, etColor;
     private View colorPreview;
     private SeekBar seekRed, seekGreen, seekBlue;
-    private Spinner spnShape, spnProfile;
+    private Spinner spnShape, spnProfile, spnUITheme;
     private Button btnSave;
     private ImageButton btnUp, btnDown, btnLeft, btnRight;
     private LinearLayout layoutPosition, layoutLineSides;
@@ -41,6 +41,9 @@ public class SettingsActivity extends AppCompatActivity {
     private boolean isInitializing = true;
 
     private static final String[] PROFILES = {"Default", "Profile 1", "Profile 2"};
+    private static final String[] UI_THEMES = {"System Default (Minimal)", "OpenAOD Classic (Vibrant)"};
+    private static final String[] UI_THEME_KEYS = {"minimal", "classic"};
+
     private View stepperSize, stepperDuration, stepperMinAlpha, stepperMaxAlpha, stepperTimeout;
 
     private final BroadcastReceiver positionReceiver = new BroadcastReceiver() {
@@ -59,6 +62,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        applyUITheme();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
@@ -70,7 +74,17 @@ public class SettingsActivity extends AppCompatActivity {
         isInitializing = false;
     }
 
+    private void applyUITheme() {
+        String theme = PreferenceUtils.getPrefs(this).getString("ui_theme", "classic");
+        if ("minimal".equalsIgnoreCase(theme)) {
+            setTheme(R.style.Theme_OpenAODNotify_Minimal);
+        } else {
+            setTheme(R.style.Theme_OpenAODNotify_Classic);
+        }
+    }
+
     private void bindViews() {
+        spnUITheme = findViewById(R.id.spnUITheme);
         spnProfile = findViewById(R.id.spnProfile);
         spnShape = findViewById(R.id.spnShape);
         etX = findViewById(R.id.etX);
@@ -101,6 +115,10 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void setupSpinners() {
+        ArrayAdapter<String> uiAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, UI_THEMES);
+        uiAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spnUITheme.setAdapter(uiAdapter);
+
         ArrayAdapter<String> profileAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, PROFILES);
         profileAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spnProfile.setAdapter(profileAdapter);
@@ -108,13 +126,20 @@ public class SettingsActivity extends AppCompatActivity {
         PreferenceUtils.ShapeType[] shapes = PreferenceUtils.ShapeType.values();
         String[] labels = new String[shapes.length];
         for(int i=0; i<shapes.length; i++) labels[i] = shapes[i].getLabel();
-        
         ArrayAdapter<String> shapeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, labels);
         shapeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spnShape.setAdapter(shapeAdapter);
     }
 
     private void loadGlobalSettings() {
+        String currentTheme = PreferenceUtils.getPrefs(this).getString("ui_theme", "classic");
+        for (int i = 0; i < UI_THEME_KEYS.length; i++) {
+            if (UI_THEME_KEYS[i].equalsIgnoreCase(currentTheme)) {
+                spnUITheme.setSelection(i);
+                break;
+            }
+        }
+
         String currentProfile = PreferenceUtils.getPrefs(this).getString(PreferenceUtils.KEY_CURRENT_PROFILE, PreferenceUtils.PROFILE_DEFAULT);
         for (int i = 0; i < PROFILES.length; i++) {
             if (PROFILES[i].equalsIgnoreCase(currentProfile)) {
@@ -145,18 +170,26 @@ public class SettingsActivity extends AppCompatActivity {
             cbLeft.setChecked((sides & PreferenceUtils.SIDE_LEFT) != 0);
             cbRight.setChecked((sides & PreferenceUtils.SIDE_RIGHT) != 0);
         }
-        
         updateUIVisibility(shape);
     }
 
     private void updateUIVisibility(PreferenceUtils.ShapeType shape) {
         layoutPosition.setVisibility(shape.isDraggable() ? View.VISIBLE : View.GONE);
         layoutLineSides.setVisibility(shape == PreferenceUtils.ShapeType.LINES ? View.VISIBLE : View.GONE);
-        // Rounded applies to Rectangles and Lines (Borders)
         swRounded.setVisibility(shape == PreferenceUtils.ShapeType.RECTANGLE || shape == PreferenceUtils.ShapeType.LINES ? View.VISIBLE : View.GONE);
     }
 
     private void setupListeners() {
+        spnUITheme.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (isInitializing) return;
+                PreferenceUtils.getPrefs(SettingsActivity.this).edit().putString("ui_theme", UI_THEME_KEYS[position]).apply();
+                recreate(); // Restart activity to apply new theme
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
         spnProfile.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {

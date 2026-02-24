@@ -3,13 +3,13 @@ package com.widgethaus.openaodnotify;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
@@ -40,6 +40,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Apply chosen UI Theme before creating the view
+        applyUITheme();
+        
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -47,6 +50,15 @@ public class MainActivity extends AppCompatActivity {
         displayVersion();
         setupListeners();
         ensureListenerRunning();
+    }
+
+    private void applyUITheme() {
+        String theme = PreferenceUtils.getPrefs(this).getString("ui_theme", "classic");
+        if ("minimal".equalsIgnoreCase(theme)) {
+            setTheme(R.style.Theme_OpenAODNotify_Minimal);
+        } else {
+            setTheme(R.style.Theme_OpenAODNotify_Classic);
+        }
     }
 
     private void bindViews() {
@@ -67,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
             PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
             tvVersion.setText("Version: " + pInfo.versionName);
         } catch (PackageManager.NameNotFoundException e) {
-            tvVersion.setText("v1.1-dev");
+            tvVersion.setText("v1.2-dev");
         }
     }
 
@@ -121,12 +133,10 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "🚀 Full Reset & Initialization Triggered");
         dumpDebugInfo();
 
-        // 1. Force clear the overlay
         Intent stopIntent = new Intent(this, OpenAODOverlayService.class);
         stopIntent.setAction(OpenAODOverlayService.ACTION_STOP);
         startService(stopIntent);
 
-        // 2. Refresh the notification listener binding
         if (PreferenceUtils.isNotificationAccessGranted(this)) {
             ComponentName componentName = new ComponentName(this, OpenAODListener.class);
             getPackageManager().setComponentEnabledSetting(componentName, 
@@ -135,7 +145,6 @@ public class MainActivity extends AppCompatActivity {
                     PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
             
             NotificationListenerService.requestRebind(componentName);
-            Log.d(TAG, "Listener component toggled and rebind requested");
         }
 
         Toast.makeText(this, "Reset complete. Checking Logcat for debug dump...", Toast.LENGTH_LONG).show();
@@ -154,22 +163,8 @@ public class MainActivity extends AppCompatActivity {
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         Log.d(TAG, "Is Screen On (Interactive): " + (pm != null && pm.isInteractive()));
         
-        Log.d(TAG, "Current Settings (JSON): " + getSettingsAsJson());
+        Log.d(TAG, "Current Settings: " + PreferenceUtils.getPrefs(this).getAll());
         Log.d(TAG, "-------------------");
-    }
-
-    private String getSettingsAsJson() {
-        try {
-            SharedPreferences prefs = PreferenceUtils.getPrefs(this);
-            Map<String, ?> allEntries = prefs.getAll();
-            JSONObject json = new JSONObject();
-            for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
-                json.put(entry.getKey(), entry.getValue());
-            }
-            return json.toString(2);
-        } catch (Exception e) {
-            return "Error serializing settings: " + e.getMessage();
-        }
     }
 
     private void exportLogs() {

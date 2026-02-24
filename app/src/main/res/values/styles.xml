@@ -1,0 +1,26 @@
+<resources>
+    <!-- Scheme 1: Classic OpenAOD (Helpful Multi-Color Steps) -->
+    <style name="Theme.OpenAODNotify.Classic" parent="Theme.OpenAODNotify">
+        <item name="colorStep1">#4285F4</item> <!-- Google Blue -->
+        <item name="colorStep2">#34A853</item> <!-- Google Green -->
+        <item name="colorStep3">#FBBC05</item> <!-- Google Yellow -->
+        <item name="colorStep4">#EA4335</item> <!-- Google Red -->
+        <item name="colorStep5">#9C27B0</item> <!-- Purple -->
+    </style>
+
+    <!-- Scheme 2: Minimal (System Default) -->
+    <style name="Theme.OpenAODNotify.Minimal" parent="Theme.OpenAODNotify">
+        <item name="colorStep1">?attr/colorSurfaceVariant</item>
+        <item name="colorStep2">?attr/colorPrimary</item>
+        <item name="colorStep3">?attr/colorSecondary</item>
+        <item name="colorStep4">?attr/colorTertiary</item>
+        <item name="colorStep5">?attr/colorOutline</item>
+    </style>
+
+    <!-- Custom Attributes for the Steps -->
+    <attr name="colorStep1" format="color|reference" />
+    <attr name="colorStep2" format="color|reference" />
+    <attr name="colorStep3" format="color|reference" />
+    <attr name="colorStep4" format="color|reference" />
+    <attr name="colorStep5" format="color|reference" />
+</resources>
