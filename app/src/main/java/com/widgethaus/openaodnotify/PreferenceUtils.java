@@ -9,6 +9,9 @@ public class PreferenceUtils {
     public static final String PREFS_NAME = "AOD_PREFS";
     public static final String KEY_CURRENT_PROFILE = "current_profile";
     public static final String PROFILE_DEFAULT = "default";
+    public static final String KEY_UI_THEME = "ui_theme";
+    public static final String UI_THEME_MINIMAL = "minimal";
+    public static final String UI_THEME_CLASSIC = "classic";
 
     // Bitmasks for the LINES shape
     public static final int SIDE_TOP = 1;
@@ -129,7 +132,7 @@ public class PreferenceUtils {
         editor.apply();
     }
 
-    // Generic accessor methods requested
+    // Generic accessor methods
     public static int getInt(Context context, String key, int def) {
         return getPrefs(context).getInt(getPrefix(context) + key, def);
     }

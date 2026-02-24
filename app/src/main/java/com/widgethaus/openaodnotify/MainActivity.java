@@ -37,11 +37,13 @@ public class MainActivity extends AppCompatActivity {
     private Button btnOverlay, btnNotify, btnBattery, btnAppInfo, btnTestOverlay, btnAccessibility, btnExportLogs, btnReset;
     private ImageButton btnSettings;
     private TextView tvVersion;
+    private String currentTheme;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // Apply chosen UI Theme before creating the view
-        applyUITheme();
+        // Track the theme used for this creation
+        currentTheme = PreferenceUtils.getPrefs(this).getString(PreferenceUtils.KEY_UI_THEME, PreferenceUtils.UI_THEME_MINIMAL);
+        applyUITheme(currentTheme);
         
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -52,9 +54,8 @@ public class MainActivity extends AppCompatActivity {
         ensureListenerRunning();
     }
 
-    private void applyUITheme() {
-        String theme = PreferenceUtils.getPrefs(this).getString("ui_theme", "classic");
-        if ("minimal".equalsIgnoreCase(theme)) {
+    private void applyUITheme(String theme) {
+        if (PreferenceUtils.UI_THEME_MINIMAL.equalsIgnoreCase(theme)) {
             setTheme(R.style.Theme_OpenAODNotify_Minimal);
         } else {
             setTheme(R.style.Theme_OpenAODNotify_Classic);
@@ -107,13 +108,15 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(this, OpenAODOverlayService.class);
             intent.setAction(OpenAODOverlayService.ACTION_START);
             intent.putExtra("preview", true);
-            intent.putExtra("shape", PreferenceUtils.getInt(this, "shape", 0));
-            intent.putExtra("color", PreferenceUtils.getString(this, "color", "0066ff"));
-            intent.putExtra("size", PreferenceUtils.getInt(this, "size", 60));
-            intent.putExtra("duration", PreferenceUtils.getInt(this, "duration", 2500));
-            intent.putExtra("min_alpha", PreferenceUtils.getFloat(this, "min_alpha", 0.1f));
-            intent.putExtra("max_alpha", PreferenceUtils.getFloat(this, "max_alpha", 1.0f));
-            intent.putExtra("rounded", PreferenceUtils.getBoolean(this, "rounded", true));
+            
+            PreferenceUtils.ShapeType shape = PreferenceUtils.getCurrentShape(this);
+            intent.putExtra("shape", shape.getId());
+            intent.putExtra("color", PreferenceUtils.getColor(this));
+            intent.putExtra("size", PreferenceUtils.getShapeSize(this, shape));
+            intent.putExtra("duration", PreferenceUtils.getDuration(this));
+            intent.putExtra("min_alpha", PreferenceUtils.getMinAlpha(this));
+            intent.putExtra("max_alpha", PreferenceUtils.getMaxAlpha(this));
+            intent.putExtra("rounded", PreferenceUtils.isShapeRounded(this, shape));
             
             startService(intent);
             Toast.makeText(this, "Testing AOD Dot...", Toast.LENGTH_SHORT).show();
@@ -207,6 +210,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        
+        // If theme has changed while in Settings, refresh this activity
+        String savedTheme = PreferenceUtils.getPrefs(this).getString(PreferenceUtils.KEY_UI_THEME, PreferenceUtils.UI_THEME_MINIMAL);
+        if (!savedTheme.equalsIgnoreCase(currentTheme)) {
+            recreate();
+        }
+
         updateUI();
     }
 
