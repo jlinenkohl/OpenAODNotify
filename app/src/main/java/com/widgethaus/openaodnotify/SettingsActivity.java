@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -26,6 +27,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
 public class SettingsActivity extends AppCompatActivity {
+    private static final String TAG = "SettingsActivity";
 
     private EditText etX, etY, etColor;
     private View colorPreview;
@@ -71,6 +73,8 @@ public class SettingsActivity extends AppCompatActivity {
         loadGlobalSettings();
         loadShapeSettings(PreferenceUtils.getCurrentShape(this));
         setupListeners();
+        
+        // Mark initialization as finished so listeners can react to user input
         isInitializing = false;
     }
 
@@ -135,7 +139,7 @@ public class SettingsActivity extends AppCompatActivity {
         String currentTheme = PreferenceUtils.getPrefs(this).getString("ui_theme", "classic");
         for (int i = 0; i < UI_THEME_KEYS.length; i++) {
             if (UI_THEME_KEYS[i].equalsIgnoreCase(currentTheme)) {
-                spnUITheme.setSelection(i);
+                spnUITheme.setSelection(i, false); // false prevents triggering listener during load
                 break;
             }
         }
@@ -143,7 +147,7 @@ public class SettingsActivity extends AppCompatActivity {
         String currentProfile = PreferenceUtils.getPrefs(this).getString(PreferenceUtils.KEY_CURRENT_PROFILE, PreferenceUtils.PROFILE_DEFAULT);
         for (int i = 0; i < PROFILES.length; i++) {
             if (PROFILES[i].equalsIgnoreCase(currentProfile)) {
-                spnProfile.setSelection(i);
+                spnProfile.setSelection(i, false);
                 break;
             }
         }
@@ -154,7 +158,7 @@ public class SettingsActivity extends AppCompatActivity {
         ((EditText) stepperMinAlpha.findViewById(R.id.etValue)).setText(String.valueOf(PreferenceUtils.getMinAlpha(this)));
         ((EditText) stepperMaxAlpha.findViewById(R.id.etValue)).setText(String.valueOf(PreferenceUtils.getMaxAlpha(this)));
         ((EditText) stepperTimeout.findViewById(R.id.etValue)).setText(String.valueOf(PreferenceUtils.getTimeout(this)));
-        spnShape.setSelection(PreferenceUtils.getCurrentShape(this).getId());
+        spnShape.setSelection(PreferenceUtils.getCurrentShape(this).getId(), false);
     }
 
     private void loadShapeSettings(PreferenceUtils.ShapeType shape) {
@@ -184,8 +188,14 @@ public class SettingsActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (isInitializing) return;
-                PreferenceUtils.getPrefs(SettingsActivity.this).edit().putString("ui_theme", UI_THEME_KEYS[position]).apply();
-                recreate(); // Restart activity to apply new theme
+                String newKey = UI_THEME_KEYS[position];
+                String currentKey = PreferenceUtils.getPrefs(SettingsActivity.this).getString("ui_theme", "classic");
+                
+                // Only recreate if the theme actually changed to avoid loop
+                if (!newKey.equalsIgnoreCase(currentKey)) {
+                    PreferenceUtils.getPrefs(SettingsActivity.this).edit().putString("ui_theme", newKey).apply();
+                    recreate();
+                }
             }
             @Override public void onNothingSelected(AdapterView<?> parent) {}
         });

@@ -4,7 +4,7 @@
     <selectionStates>
       <SelectionState runConfigName="OpenAODNotify">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-02-14T15:22:47.751100724Z">
+        <DropdownSelection timestamp="2026-02-24T20:15:20.906287766Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="PhysicalDevice" identifier="serial=39290DLJG001FJ" />
