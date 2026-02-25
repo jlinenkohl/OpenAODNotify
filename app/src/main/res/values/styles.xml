@@ -8,8 +8,8 @@
         <item name="colorStep5">#9C27B0</item> <!-- Purple -->
     </style>
 
-    <!-- Scheme 2: Minimal (System Default) -->
-    <style name="Theme.OpenAODNotify.Minimal" parent="Theme.OpenAODNotify">
+    <!-- Scheme 2: System Default (Inherits from phone settings) -->
+    <style name="Theme.OpenAODNotify.System" parent="Theme.OpenAODNotify">
         <item name="colorStep1">?attr/colorSurfaceVariant</item>
         <item name="colorStep2">?attr/colorPrimary</item>
         <item name="colorStep3">?attr/colorSecondary</item>

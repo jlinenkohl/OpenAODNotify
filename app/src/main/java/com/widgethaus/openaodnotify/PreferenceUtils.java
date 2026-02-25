@@ -10,7 +10,7 @@ public class PreferenceUtils {
     public static final String KEY_CURRENT_PROFILE = "current_profile";
     public static final String PROFILE_DEFAULT = "default";
     public static final String KEY_UI_THEME = "ui_theme";
-    public static final String UI_THEME_MINIMAL = "minimal";
+    public static final String UI_THEME_SYSTEM = "system";
     public static final String UI_THEME_CLASSIC = "classic";
 
     // Bitmasks for the LINES shape

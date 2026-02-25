@@ -73,7 +73,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="?attr/colorSurfaceVariant"
+                android:background="?attr/colorStep1"
                 android:padding="16dp"
                 android:layout_marginBottom="16dp">
 
@@ -81,14 +81,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Step 1: Unlock Restricted Settings"
-                    android:textColor="?attr/colorPrimary"
+                    android:textColor="#FFFFFF"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Go to App Info > (⋮) Three dots > 'Allow restricted settings'. This is required for sideloaded apps."
-                    android:textColor="?android:attr/textColorPrimary"
+                    android:textColor="#EEEEEE"
                     android:layout_marginTop="8dp" />
 
                 <Button
@@ -97,6 +97,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:text="Open App Info"
+                    android:backgroundTint="#33000000"
+                    android:textColor="#FFFFFF"
                     style="@style/Widget.Material3.Button.TextButton"/>
             </LinearLayout>
 
@@ -106,6 +108,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
                 android:text="Step 2: Grant Overlay Permission"
+                android:backgroundTint="?attr/colorStep2"
                 android:layout_marginBottom="12dp"/>
 
             <!-- STEP 3: NOTIFICATION ACCESS -->
@@ -114,6 +117,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
                 android:text="Step 3: Grant Notification Access"
+                android:backgroundTint="?attr/colorStep3"
                 android:layout_marginBottom="12dp"/>
 
             <!-- STEP 4: ACCESSIBILITY PERMISSION -->
@@ -122,6 +126,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
                 android:text="Step 4: Grant Accessibility Access"
+                android:backgroundTint="?attr/colorStep4"
                 android:layout_marginBottom="12dp"/>
 
             <!-- STEP 5: BATTERY OPTIMIZATION -->
@@ -130,6 +135,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
                 android:text="Step 5: Ignore Battery Optimization"
+                android:backgroundTint="?attr/colorStep5"
                 android:layout_marginBottom="24dp"/>
 
             <!-- DEBUG TOOLS SECTION -->

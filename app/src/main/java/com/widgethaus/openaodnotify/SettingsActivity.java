@@ -44,7 +44,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     private static final String[] PROFILES = {"Default", "Profile 1", "Profile 2"};
     private static final String[] UI_THEMES = {"System Default (Minimal)", "OpenAOD Classic (Vibrant)"};
-    private static final String[] UI_THEME_KEYS = {PreferenceUtils.UI_THEME_MINIMAL, PreferenceUtils.UI_THEME_CLASSIC};
+    private static final String[] UI_THEME_KEYS = {PreferenceUtils.UI_THEME_SYSTEM, PreferenceUtils.UI_THEME_CLASSIC};
 
     private View stepperSize, stepperDuration, stepperMinAlpha, stepperMaxAlpha, stepperTimeout;
 
@@ -78,9 +78,9 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void applyUITheme() {
-        String theme = PreferenceUtils.getPrefs(this).getString(PreferenceUtils.KEY_UI_THEME, PreferenceUtils.UI_THEME_MINIMAL);
-        if (PreferenceUtils.UI_THEME_MINIMAL.equalsIgnoreCase(theme)) {
-            setTheme(R.style.Theme_OpenAODNotify_Minimal);
+        String theme = PreferenceUtils.getPrefs(this).getString(PreferenceUtils.KEY_UI_THEME, PreferenceUtils.UI_THEME_SYSTEM);
+        if (PreferenceUtils.UI_THEME_SYSTEM.equalsIgnoreCase(theme)) {
+            setTheme(R.style.Theme_OpenAODNotify_System);
         } else {
             setTheme(R.style.Theme_OpenAODNotify_Classic);
         }
@@ -135,7 +135,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void loadGlobalSettings() {
-        String currentTheme = PreferenceUtils.getPrefs(this).getString(PreferenceUtils.KEY_UI_THEME, PreferenceUtils.UI_THEME_MINIMAL);
+        String currentTheme = PreferenceUtils.getPrefs(this).getString(PreferenceUtils.KEY_UI_THEME, PreferenceUtils.UI_THEME_SYSTEM);
         for (int i = 0; i < UI_THEME_KEYS.length; i++) {
             if (UI_THEME_KEYS[i].equalsIgnoreCase(currentTheme)) {
                 spnUITheme.setSelection(i, false);
@@ -188,7 +188,7 @@ public class SettingsActivity extends AppCompatActivity {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (isInitializing) return;
                 String newKey = UI_THEME_KEYS[position];
-                String currentKey = PreferenceUtils.getPrefs(SettingsActivity.this).getString(PreferenceUtils.KEY_UI_THEME, PreferenceUtils.UI_THEME_MINIMAL);
+                String currentKey = PreferenceUtils.getPrefs(SettingsActivity.this).getString(PreferenceUtils.KEY_UI_THEME, PreferenceUtils.UI_THEME_SYSTEM);
                 
                 if (!newKey.equalsIgnoreCase(currentKey)) {
                     PreferenceUtils.getPrefs(SettingsActivity.this).edit().putString(PreferenceUtils.KEY_UI_THEME, newKey).apply();

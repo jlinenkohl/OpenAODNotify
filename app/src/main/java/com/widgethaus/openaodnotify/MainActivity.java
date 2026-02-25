@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Track the theme used for this creation
-        currentTheme = PreferenceUtils.getPrefs(this).getString(PreferenceUtils.KEY_UI_THEME, PreferenceUtils.UI_THEME_MINIMAL);
+        currentTheme = PreferenceUtils.getPrefs(this).getString(PreferenceUtils.KEY_UI_THEME, PreferenceUtils.UI_THEME_SYSTEM);
         applyUITheme(currentTheme);
         
         super.onCreate(savedInstanceState);
@@ -55,8 +55,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void applyUITheme(String theme) {
-        if (PreferenceUtils.UI_THEME_MINIMAL.equalsIgnoreCase(theme)) {
-            setTheme(R.style.Theme_OpenAODNotify_Minimal);
+        if (PreferenceUtils.UI_THEME_SYSTEM.equalsIgnoreCase(theme)) {
+            setTheme(R.style.Theme_OpenAODNotify_System);
         } else {
             setTheme(R.style.Theme_OpenAODNotify_Classic);
         }
@@ -212,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         
         // If theme has changed while in Settings, refresh this activity
-        String savedTheme = PreferenceUtils.getPrefs(this).getString(PreferenceUtils.KEY_UI_THEME, PreferenceUtils.UI_THEME_MINIMAL);
+        String savedTheme = PreferenceUtils.getPrefs(this).getString(PreferenceUtils.KEY_UI_THEME, PreferenceUtils.UI_THEME_SYSTEM);
         if (!savedTheme.equalsIgnoreCase(currentTheme)) {
             recreate();
         }
