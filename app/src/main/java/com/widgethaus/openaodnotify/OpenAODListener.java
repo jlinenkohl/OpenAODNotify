@@ -70,8 +70,24 @@ public class OpenAODListener extends NotificationListenerService {
         int priority = notification.priority;
         String channelId = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? notification.getChannelId() : "N/A";
 
-        Log.d(TAG, String.format("🔍 Inspecting: Pkg=%s, Title=%s, Cat=%s, Chan=%s, Priority=%d, Ongoing=%b", 
-                pkg, title, category, channelId, priority, sbn.isOngoing()));
+        // 1. Check if it's clearable (if setting is enabled)
+        if (PreferenceUtils.shouldIgnoreNonClearable(this) && !sbn.isClearable()) {
+            return false;
+        }
+
+        // 2. Check notification age (TTL)
+        long postTime = sbn.getPostTime();
+        long now = System.currentTimeMillis();
+        long ageMs = now - postTime;
+        long maxAgeMs = (long) PreferenceUtils.getMaxNotifAgeMinutes(this) * 60 * 1000;
+
+        if (ageMs > maxAgeMs) {
+            Log.d(TAG, "Ignoring old notification: " + pkg + " (Age: " + (ageMs / 60000) + " mins)");
+            return false;
+        }
+
+        Log.d(TAG, String.format("🔍 Inspecting: Pkg=%s, Title=%s, Cat=%s, Chan=%s, Priority=%d, Ongoing=%b, Clearable=%b", 
+                pkg, title, category, channelId, priority, sbn.isOngoing(), sbn.isClearable()));
 
         // Filter out system packages that have persistent/ambient notifications
         return !sbn.isOngoing() && 
@@ -130,6 +146,9 @@ public class OpenAODListener extends NotificationListenerService {
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
+        // Discovery: Track unique packages that post notifications
+        PreferenceUtils.addDiscoveredPackage(this, sbn.getPackageName());
+
         if (!isValidNotification(sbn)) return;
         Log.d(TAG, "✅ Valid Notification Posted: " + sbn.getPackageName());
         

@@ -5,6 +5,9 @@ import android.content.SharedPreferences;
 import android.provider.Settings;
 import android.text.TextUtils;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class PreferenceUtils {
     public static final String PREFS_NAME = "AOD_PREFS";
     public static final String KEY_CURRENT_PROFILE = "current_profile";
@@ -18,6 +21,9 @@ public class PreferenceUtils {
     public static final int SIDE_BOTTOM = 2;
     public static final int SIDE_LEFT = 4;
     public static final int SIDE_RIGHT = 8;
+
+    // Discovery keys
+    public static final String KEY_DISCOVERED_PACKAGES = "discovered_packages";
 
     public enum ShapeType {
         CIRCLE(0, "Circle", true),
@@ -107,6 +113,15 @@ public class PreferenceUtils {
         return ShapeType.fromId(getPrefs(context).getInt(getPrefix(context) + "current_shape", 0));
     }
 
+    // --- Intelligent Filtering Settings ---
+    public static int getMaxNotifAgeMinutes(Context context) {
+        return getPrefs(context).getInt(getPrefix(context) + "max_notif_age", 60);
+    }
+
+    public static boolean shouldIgnoreNonClearable(Context context) {
+        return getPrefs(context).getBoolean(getPrefix(context) + "ignore_non_clearable", true);
+    }
+
     public static void saveGlobalSettings(Context context, String color, int duration, float min, float max, int timeout, int shapeId) {
         SharedPreferences.Editor editor = getPrefs(context).edit();
         String p = getPrefix(context);
@@ -130,6 +145,19 @@ public class PreferenceUtils {
             editor.putInt(getPrefix(context) + "LINES_sides", sides);
         }
         editor.apply();
+    }
+
+    // --- Discovery Methods ---
+    public static void addDiscoveredPackage(Context context, String pkg) {
+        SharedPreferences prefs = getPrefs(context);
+        Set<String> packages = new HashSet<>(prefs.getStringSet(KEY_DISCOVERED_PACKAGES, new HashSet<>()));
+        if (packages.add(pkg)) {
+            prefs.edit().putStringSet(KEY_DISCOVERED_PACKAGES, packages).apply();
+        }
+    }
+
+    public static Set<String> getDiscoveredPackages(Context context) {
+        return getPrefs(context).getStringSet(KEY_DISCOVERED_PACKAGES, new HashSet<>());
     }
 
     // Generic accessor methods

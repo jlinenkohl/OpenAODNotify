@@ -10,8 +10,8 @@ android {
         applicationId = "com.widgethaus.openaodnotify"
         minSdk = 34
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.2-dev"
+        versionCode = 2
+        versionName = "1.3-dev"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
