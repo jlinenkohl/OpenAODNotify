@@ -5,35 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1-dev] - 2026-02-08
+## [1.3-dev] - 2026-02-13
 
 ### Added
-- **Shape-Scoped Settings**: Visual properties (size, position, rounding) are now stored independently for each shape.
-- **Unified Lines System**: Replaced individual line types with a single "Lines" shape featuring a bitmask-based side selector (Top, Bottom, Left, Right).
-- **Diagnostics Suite**: Added "Reset & Initialize" button with full debug dump (JSON settings, screen metrics) and "Export Debug Logs" functionality.
-- **Rotation Awareness**: Overlay now detects orientation changes and automatically re-aligns itself to prevent distortion.
-- **Dynamic Versioning**: Displaying current version and build type (-debug suffix) at the bottom of the main screen.
-- **Permission Health Check**: Added `BootReceiver` to notify users via the system tray if Accessibility or Notification permissions are lost after a reboot.
-
-### Changed
-- **Sane Defaults**: Updated global defaults (2000ms duration, 0.99 max alpha) and optimized starting positions for draggable shapes.
-- **Theme Standardization**: Removed all hardcoded hex colors from layouts in favor of system theme attributes (`?attr/colorSurface`, etc.).
-- **AOD Pierce Refinement**: Switched large overlays to hardware rendering and forced translucent blending (`0.99f` alpha) to improve visibility on physical device AOD screens.
+- **Intelligent Filtering Engine**: Implemented multi-level notification logic to reduce AOD clutter.
+- **Discovery Activity**: New UI to manage whitelisted apps and system categories (Message, Call, Email, etc.).
+- **TTL (Time-To-Live)**: Notifications older than 60 minutes (configurable) are now ignored to prevent stale AOD triggers.
+- **Clearable Check**: Added option to ignore non-dismissible/ongoing notifications.
+- **Automatic Rule Discovery**: System now captures and persists unique notification patterns (Package|Channel|Category) for easy whitelisting.
+- **Global Override**: Master toggle to switch between "Allow All Valid" and "Custom Whitelist" modes.
+- **Enhanced Debug Export**: Added prompt to choose between saving logs to Downloads or sharing via system sheet.
 
 ### Fixed
-- **Ghost Overlay**: Fixed bug where preview shapes would persist after abandoning the settings screen.
-- **Timer Stalling**: Implemented timer refreshing so that subsequent notifications extend the active breathing duration.
-- **ANR Prevention**: Added state guards to the Accessibility Service to prevent main-thread congestion during high notification traffic.
+- **Android 14+ Compatibility**: Added `RECEIVER_EXPORTED` flag to the screen state receiver.
+- **UI Integrity**: Improved Z-order management in DiscoveryActivity and added `fitsSystemWindows` support for main layouts.
+- **Stability**: Fixed potential crashes in SettingsActivity related to invalid hex color inputs.
 
-## [1.0.0] - 2026-02-08
+### Changed
+- **Debug Tooling**: Restricted advanced debug actions (Reset, Export Logs) to debug builds only.
 
-### Added
-- **Accessibility Service Architecture**: Migrated to `AccessibilityService` to utilize `TYPE_ACCESSIBILITY_OVERLAY` for AOD visibility.
-- **Leashed Handle**: Interactive drag-and-drop system for precise shape positioning.
-- **RGB Color Mixer**: Custom slider-based color picker for precise aesthetic control.
-- **Numeric Steppers**: UI controls for fine-tuning numeric settings without the keyboard.
-- **5-Step Onboarding**: Integrated permission flow for sideloaded app installation.
-- **Basic Shapes**: Circle, Square, Rectangle, and Ring support.
-
-[1.1-dev]: https://github.com/jlinenkohl/OpenAODNotify/compare/v1.0.0...v1.1-dev
-[1.0.0]: https://github.com/jlinenkohl/OpenAODNotify/releases/tag/v1.0.0
+## [1.1-dev] - 2026-02-08
+...

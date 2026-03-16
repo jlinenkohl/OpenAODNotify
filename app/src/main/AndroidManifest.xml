@@ -27,6 +27,11 @@
             android:theme="@style/Theme.OpenAODNotify"
             android:exported="false" />
 
+        <activity android:name=".DiscoveryActivity"
+            android:label="Filtering &amp; Discovery"
+            android:theme="@style/Theme.OpenAODNotify"
+            android:exported="false" />
+
         <service android:name=".OpenAODListener"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
             android:exported="true">

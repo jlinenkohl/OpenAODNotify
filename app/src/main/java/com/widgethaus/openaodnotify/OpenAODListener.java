@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
@@ -12,12 +13,26 @@ import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class OpenAODListener extends NotificationListenerService {
     private static final String TAG = "OpenAODListener";
+    public static final String ACTION_REFRESH = "com.widgethaus.openaodnotify.REFRESH_LISTENER";
+    
     private static boolean isConnected = false;
     public static boolean hasNotification = false;
+    private boolean isOverlayRunning = false;
+    
     private BroadcastReceiver screenReceiver;
     private long lastNotificationTime = 0;
+
+    // Cached Preferences for Battery Efficiency
+    private boolean prefGlobalDefault = true;
+    private boolean prefIgnoreNonClearable = true;
+    private int prefMaxAgeMinutes = 60;
+    private Set<String> prefEnabledCats = new HashSet<>();
+    private Set<String> prefEnabledApps = new HashSet<>();
 
     public static boolean isServiceConnected() {
         return isConnected;
@@ -28,6 +43,7 @@ public class OpenAODListener extends NotificationListenerService {
         super.onListenerConnected();
         Log.d(TAG, "✅ Listener Connected");
         isConnected = true;
+        loadPreferences();
         updateNotificationState();
     }
 
@@ -36,6 +52,16 @@ public class OpenAODListener extends NotificationListenerService {
         super.onListenerDisconnected();
         Log.d(TAG, "❌ Listener Disconnected");
         isConnected = false;
+    }
+
+    private void loadPreferences() {
+        SharedPreferences prefs = PreferenceUtils.getPrefs(this);
+        prefGlobalDefault = prefs.getBoolean("filter_global_default", true);
+        prefIgnoreNonClearable = PreferenceUtils.shouldIgnoreNonClearable(this);
+        prefMaxAgeMinutes = PreferenceUtils.getMaxNotifAgeMinutes(this);
+        prefEnabledCats = prefs.getStringSet("filter_enabled_categories", new HashSet<>());
+        prefEnabledApps = prefs.getStringSet("filter_enabled_apps", new HashSet<>());
+        Log.d(TAG, "Preferences loaded/refreshed");
     }
 
     private void updateNotificationState() {
@@ -51,10 +77,28 @@ public class OpenAODListener extends NotificationListenerService {
                     }
                 }
             }
+            
+            boolean changed = (hasNotification != stillHasNotif);
             hasNotification = stillHasNotif;
+            
             Log.d(TAG, "State check: hasNotification=" + hasNotification);
+            
+            if (changed) {
+                handleOverlayUpdate();
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error checking notifications", e);
+        }
+    }
+
+    private void handleOverlayUpdate() {
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        boolean isScreenOff = pm != null && !pm.isInteractive();
+
+        if (hasNotification && isScreenOff) {
+            startOverlayService(false);
+        } else if (!hasNotification) {
+            stopOverlayService();
         }
     }
 
@@ -62,110 +106,138 @@ public class OpenAODListener extends NotificationListenerService {
         if (sbn == null) return false;
         String pkg = sbn.getPackageName();
         
-        // Log deep metadata for rule discovery
+        // 1. Static Filters (Fastest)
+        if (sbn.isOngoing() || 
+            pkg.equals("android") || 
+            pkg.equals("com.android.systemui") || 
+            pkg.equals("com.android.settings") ||
+            pkg.equals("com.google.android.gms")) {
+            return false;
+        }
+
+        // 2. Clearable Filter
+        if (prefIgnoreNonClearable && !sbn.isClearable()) {
+            return false;
+        }
+
+        // 3. Age Filter
+        long ageMs = System.currentTimeMillis() - sbn.getPostTime();
+        if (ageMs > (long) prefMaxAgeMinutes * 60 * 1000) {
+            return false;
+        }
+
+        // 4. Custom Filtering Logic
+        if (prefGlobalDefault) {
+            return true;
+        }
+
         Notification notification = sbn.getNotification();
-        Bundle extras = notification.extras;
-        String title = String.valueOf(extras.get(Notification.EXTRA_TITLE));
-        String category = notification.category;
-        int priority = notification.priority;
-        String channelId = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? notification.getChannelId() : "N/A";
-
-        // 1. Check if it's clearable (if setting is enabled)
-        if (PreferenceUtils.shouldIgnoreNonClearable(this) && !sbn.isClearable()) {
-            return false;
+        if (notification.category != null && prefEnabledCats.contains(notification.category)) {
+            return true;
         }
 
-        // 2. Check notification age (TTL)
-        long postTime = sbn.getPostTime();
-        long now = System.currentTimeMillis();
-        long ageMs = now - postTime;
-        long maxAgeMs = (long) PreferenceUtils.getMaxNotifAgeMinutes(this) * 60 * 1000;
-
-        if (ageMs > maxAgeMs) {
-            Log.d(TAG, "Ignoring old notification: " + pkg + " (Age: " + (ageMs / 60000) + " mins)");
-            return false;
+        if (prefEnabledApps.contains(pkg)) {
+            return true;
         }
 
-        Log.d(TAG, String.format("🔍 Inspecting: Pkg=%s, Title=%s, Cat=%s, Chan=%s, Priority=%d, Ongoing=%b, Clearable=%b", 
-                pkg, title, category, channelId, priority, sbn.isOngoing(), sbn.isClearable()));
-
-        // Filter out system packages that have persistent/ambient notifications
-        return !sbn.isOngoing() && 
-               !pkg.equals("android") && 
-               !pkg.equals("com.android.systemui") && 
-               !pkg.equals("com.android.settings") &&
-               !pkg.equals("com.google.android.gms");
+        return false;
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
         Log.d(TAG, "Listener Created");
+        
+        // Initialize prefs in case onListenerConnected is delayed
+        loadPreferences();
+
         screenReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getAction();
                 if (Intent.ACTION_SCREEN_OFF.equals(action)) {
                     updateNotificationState();
-                    if (hasNotification) startOverlayService();
+                    if (hasNotification) startOverlayService(false);
                 } else if (Intent.ACTION_SCREEN_ON.equals(action)) {
+                    // Debounce screen on to prevent flicker during quick unlock
                     long timeSinceNotif = System.currentTimeMillis() - lastNotificationTime;
-                    if (timeSinceNotif < 5000) return;
+                    if (timeSinceNotif < 2000) return;
                     stopOverlayService();
                 } else if (Intent.ACTION_USER_PRESENT.equals(action)) {
                     stopOverlayService();
+                } else if (ACTION_REFRESH.equals(action)) {
+                    Log.d(TAG, "🔄 Refreshing listener state & prefs");
+                    loadPreferences();
+                    updateNotificationState();
+                    // Always re-evaluate overlay on explicit refresh
+                    handleOverlayUpdate();
                 }
             }
         };
+        
         IntentFilter filter = new IntentFilter();
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_USER_PRESENT);
-        registerReceiver(screenReceiver, filter, Context.RECEIVER_EXPORTED);
+        filter.addAction(ACTION_REFRESH);
+        
+        int flags = 0;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            flags = Context.RECEIVER_EXPORTED;
+        }
+        registerReceiver(screenReceiver, filter, flags);
     }
 
-    private void startOverlayService() {
-        Log.d(TAG, "Starting Overlay Service");
+    private void startOverlayService(boolean force) {
+        // Redundancy check: only start if not running OR if we want to force a refresh (new notif)
+        if (isOverlayRunning && !force) return;
+
+        Log.d(TAG, "Starting Overlay Service (force=" + force + ")");
         Intent serviceIntent = new Intent(this, OpenAODOverlayService.class);
         serviceIntent.setAction(OpenAODOverlayService.ACTION_START);
-        startForegroundService(serviceIntent);
+        if (force) serviceIntent.putExtra("force", true);
+        startService(serviceIntent);
+        isOverlayRunning = true;
     }
 
     private void stopOverlayService() {
-        Log.d(TAG, "Stopping Overlay Service (via Action)");
+        if (!isOverlayRunning) return;
+
+        Log.d(TAG, "Stopping Overlay Service");
         Intent serviceIntent = new Intent(this, OpenAODOverlayService.class);
         serviceIntent.setAction(OpenAODOverlayService.ACTION_STOP);
         startService(serviceIntent);
-    }
-
-    @Override
-    public void onDestroy() {
-        if (screenReceiver != null) unregisterReceiver(screenReceiver);
-        super.onDestroy();
+        isOverlayRunning = false;
     }
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
-        // Discovery: Track unique packages that post notifications
-        PreferenceUtils.addDiscoveredPackage(this, sbn.getPackageName());
+        Notification notification = sbn.getNotification();
+        String channelId = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? notification.getChannelId() : "default";
+        PreferenceUtils.addDiscoveredRule(this, sbn.getPackageName(), channelId, notification.category);
 
         if (!isValidNotification(sbn)) return;
-        Log.d(TAG, "✅ Valid Notification Posted: " + sbn.getPackageName());
         
         hasNotification = true;
         lastNotificationTime = System.currentTimeMillis();
         
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         if (pm != null && !pm.isInteractive()) {
-            startOverlayService();
+            // New notification arrived while screen is off, force overlay refresh
+            startOverlayService(true);
         }
     }
 
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
+        // We only care about re-checking if the notification removed was a valid one
+        // but it's safer and still fairly cheap to just refresh state
         updateNotificationState();
-        if (!hasNotification) {
-            stopOverlayService();
-        }
+    }
+
+    @Override
+    public void onDestroy() {
+        if (screenReceiver != null) unregisterReceiver(screenReceiver);
+        super.onDestroy();
     }
 }

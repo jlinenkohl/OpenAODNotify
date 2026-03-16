@@ -1,4 +1,4 @@
-# OpenAODNotify Architecture (v1.1-dev)
+# OpenAODNotify Architecture
 
 ## Core Components
 

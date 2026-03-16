@@ -14,6 +14,14 @@ android {
         versionName = "1.3-dev"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Expose version name as a string resource
+        resValue("string", "app_version", "v$versionName")
+    }
+
+    buildFeatures {
+        buildConfig = true
+        resValues = true
     }
 
     buildTypes {

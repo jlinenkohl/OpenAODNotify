@@ -99,7 +99,11 @@ public class OpenAODOverlayService extends AccessibilityService {
             } else {
                 lastStartIntent = intent;
                 boolean isPreview = intent.getBooleanExtra("preview", false);
-                if (!isPreview && isOverlayVisible) {
+                boolean force = intent.getBooleanExtra("force", false);
+
+                // Optimization: If already visible and not a preview/force, just refresh timeout
+                if (!isPreview && !force && isOverlayVisible) {
+                    Log.d(TAG, "Overlay already visible, refreshing timeout");
                     startTimeout(PreferenceUtils.getTimeout(this));
                     return START_STICKY;
                 }

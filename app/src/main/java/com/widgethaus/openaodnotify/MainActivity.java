@@ -7,9 +7,10 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.provider.Settings;
-import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
@@ -23,13 +24,10 @@ import androidx.core.content.FileProvider;
 
 import android.service.notification.NotificationListenerService;
 
-import org.json.JSONObject;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
-import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -77,10 +75,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void displayVersion() {
         try {
-            PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            // minSdk is 34, so we can use the modern API directly
+            PackageInfo pInfo = getPackageManager().getPackageInfo(
+                    getPackageName(), 
+                    PackageManager.PackageInfoFlags.of(0)
+            );
             tvVersion.setText("Version: " + pInfo.versionName);
         } catch (PackageManager.NameNotFoundException e) {
-            tvVersion.setText("v1.2-dev");
+            // Fallback to BuildConfig if PackageManager fails
+            tvVersion.setText("Version: " + BuildConfig.VERSION_NAME);
         }
     }
 
@@ -117,11 +120,14 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra("min_alpha", PreferenceUtils.getMinAlpha(this));
             intent.putExtra("max_alpha", PreferenceUtils.getMaxAlpha(this));
             intent.putExtra("rounded", PreferenceUtils.isShapeRounded(this, shape));
+            intent.putExtra("x", PreferenceUtils.getShapeX(this, shape));
+            intent.putExtra("y", PreferenceUtils.getShapeY(this, shape));
+            intent.putExtra("sides", PreferenceUtils.getLineSides(this));
             
             startService(intent);
             Toast.makeText(this, "Testing AOD Dot...", Toast.LENGTH_SHORT).show();
             
-            new android.os.Handler().postDelayed(() -> {
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 Intent stopIntent = new Intent(this, OpenAODOverlayService.class);
                 stopIntent.setAction(OpenAODOverlayService.ACTION_STOP);
                 startService(stopIntent);

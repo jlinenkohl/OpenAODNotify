@@ -23,7 +23,9 @@
             android:id="@+id/spnUITheme"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="8dp" />
+            android:background="?attr/colorSurfaceVariant"
+            android:padding="12dp"
+            android:layout_marginTop="4dp" />
 
         <View
             android:layout_width="match_parent"
@@ -43,13 +45,37 @@
             android:id="@+id/spnProfile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="8dp" />
+            android:background="?attr/colorSurfaceVariant"
+            android:padding="12dp"
+            android:layout_marginTop="4dp" />
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="?android:attr/listDivider"
             android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Notification Filtering"
+            android:textAppearance="@style/TextAppearance.AppCompat.Headline"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="8dp"/>
+
+        <Button
+            android:id="@+id/btnDiscovery"
+            style="@style/Widget.AppCompat.Button.Colored"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Manage Apps &amp; Categories"
+            android:layout_marginBottom="16dp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?android:attr/listDivider"
             android:layout_marginBottom="16dp" />
 
         <TextView
@@ -81,7 +107,9 @@
                     android:id="@+id/spnShape"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="8dp" />
+                    android:background="?attr/colorSurfaceVariant"
+                    android:padding="12dp"
+                    android:layout_marginTop="4dp" />
             </LinearLayout>
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/swRounded"
@@ -90,6 +118,16 @@
                 android:text="Rounded"
                 android:layout_marginStart="16dp"/>
         </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tip: Drag the 'MOVE' handle or use arrows for fine-tuning position."
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            android:textColor="?attr/colorAccent"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:textStyle="italic" />
 
         <!-- LINE SIDES SELECTOR (Visible only for LINES shape) -->
         <LinearLayout
@@ -149,7 +187,9 @@
                     android:layout_weight="1"
                     android:hint="0066ff"
                     android:maxLength="6"
-                    android:singleLine="true" />
+                    android:singleLine="true"
+                    android:focusable="false"
+                    android:cursorVisible="false" />
                 <View
                     android:id="@+id/color_preview"
                     android:layout_width="48dp"
@@ -279,15 +319,6 @@
                         android:contentDescription="Right" />
                 </GridLayout>
             </LinearLayout>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Tip: Drag the handle or use arrows for fine-tuning."
-                android:textAppearance="@style/TextAppearance.AppCompat.Caption"
-                android:textColor="?attr/colorAccent"
-                android:layout_marginTop="4dp"
-                android:textStyle="italic" />
         </LinearLayout>
 
         <Button

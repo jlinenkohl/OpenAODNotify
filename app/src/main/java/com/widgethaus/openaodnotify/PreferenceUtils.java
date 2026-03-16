@@ -23,7 +23,7 @@ public class PreferenceUtils {
     public static final int SIDE_RIGHT = 8;
 
     // Discovery keys
-    public static final String KEY_DISCOVERED_PACKAGES = "discovered_packages";
+    public static final String KEY_DISCOVERED_RULES = "discovered_rules";
 
     public enum ShapeType {
         CIRCLE(0, "Circle", true),
@@ -147,17 +147,30 @@ public class PreferenceUtils {
         editor.apply();
     }
 
-    // --- Discovery Methods ---
-    public static void addDiscoveredPackage(Context context, String pkg) {
+    // --- Granular Discovery Methods ---
+    /**
+     * Records a discovered notification pattern.
+     * Format: packageName|channelId|category
+     */
+    public static void addDiscoveredRule(Context context, String pkg, String channelId, String category) {
+        String ruleKey = String.format("%s|%s|%s", 
+                pkg, 
+                (channelId != null ? channelId : "default"), 
+                (category != null ? category : "none"));
+        
         SharedPreferences prefs = getPrefs(context);
-        Set<String> packages = new HashSet<>(prefs.getStringSet(KEY_DISCOVERED_PACKAGES, new HashSet<>()));
-        if (packages.add(pkg)) {
-            prefs.edit().putStringSet(KEY_DISCOVERED_PACKAGES, packages).apply();
+        Set<String> rules = new HashSet<>(prefs.getStringSet(KEY_DISCOVERED_RULES, new HashSet<>()));
+        if (rules.add(ruleKey)) {
+            prefs.edit().putStringSet(KEY_DISCOVERED_RULES, rules).apply();
         }
     }
 
-    public static Set<String> getDiscoveredPackages(Context context) {
-        return getPrefs(context).getStringSet(KEY_DISCOVERED_PACKAGES, new HashSet<>());
+    public static Set<String> getDiscoveredRules(Context context) {
+        return getPrefs(context).getStringSet(KEY_DISCOVERED_RULES, new HashSet<>());
+    }
+
+    public static void clearDiscoveredRules(Context context) {
+        getPrefs(context).edit().remove(KEY_DISCOVERED_RULES).apply();
     }
 
     // Generic accessor methods

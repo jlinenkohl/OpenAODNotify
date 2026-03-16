@@ -2,6 +2,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:background="?android:attr/windowBackground">
 
     <androidx.appcompat.widget.Toolbar
@@ -10,8 +11,7 @@
         android:layout_height="wrap_content"
         android:minHeight="?attr/actionBarSize"
         android:background="?attr/colorSurface"
-        android:elevation="4dp"
-        android:fitsSystemWindows="true">
+        android:elevation="4dp">
 
         <RelativeLayout
             android:layout_width="match_parent"
@@ -196,6 +196,6 @@
         android:gravity="center"
         android:textColor="?android:attr/textColorTertiary"
         android:textSize="12sp"
-        android:text="v1.1-dev" />
+        android:text="@string/app_version" />
 
 </RelativeLayout>

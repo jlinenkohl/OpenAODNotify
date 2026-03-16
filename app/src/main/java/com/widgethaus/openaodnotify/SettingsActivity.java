@@ -33,7 +33,7 @@ public class SettingsActivity extends AppCompatActivity {
     private View colorPreview;
     private SeekBar seekRed, seekGreen, seekBlue;
     private Spinner spnShape, spnProfile, spnUITheme;
-    private Button btnSave;
+    private Button btnSave, btnDiscovery;
     private ImageButton btnUp, btnDown, btnLeft, btnRight;
     private LinearLayout layoutPosition, layoutLineSides;
     private CheckBox cbTop, cbBottom, cbLeft, cbRight;
@@ -75,6 +75,10 @@ public class SettingsActivity extends AppCompatActivity {
         setupListeners();
         
         isInitializing = false;
+
+        // Force an immediate preview update on entry to take over any existing test overlay
+        // and show the current user configuration immediately.
+        updatePreview();
     }
 
     private void applyUITheme() {
@@ -98,6 +102,7 @@ public class SettingsActivity extends AppCompatActivity {
         seekGreen = findViewById(R.id.seek_green);
         seekBlue = findViewById(R.id.seek_blue);
         btnSave = findViewById(R.id.btnSave);
+        btnDiscovery = findViewById(R.id.btnDiscovery);
         layoutPosition = findViewById(R.id.layoutPosition);
         layoutLineSides = findViewById(R.id.layoutLineSides);
         cbTop = findViewById(R.id.cbTop);
@@ -183,6 +188,11 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
+        btnDiscovery.setOnClickListener(v -> {
+            Intent intent = new Intent(this, DiscoveryActivity.class);
+            startActivity(intent);
+        });
+
         spnUITheme.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -383,7 +393,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     @Override protected void onPause() {
         super.onPause();
-        unregisterReceiver(positionReceiver);
+        registerReceiver(positionReceiver, new IntentFilter(OpenAODOverlayService.ACTION_POSITION_UPDATE), Context.RECEIVER_EXPORTED);
         if (isFinishing()) stopOverlayService();
     }
 

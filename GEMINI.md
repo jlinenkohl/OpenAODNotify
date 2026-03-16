@@ -3,7 +3,7 @@
 This document defines the technical constraints and project vision to ensure consistent AI collaboration.
 
 ## Project Vision
-A high-performance, privacy-first notification overlay for Android (AOD-focused). Current Version: `1.2-dev`.
+A high-performance, privacy-first notification overlay for Android (AOD-focused). Current Version: `1.3-dev`.
 
 ## Technical Constraints & Standards
 - **Zero External Dependencies**: Use standard Android/Material components only. Avoid 3rd-party libraries.
