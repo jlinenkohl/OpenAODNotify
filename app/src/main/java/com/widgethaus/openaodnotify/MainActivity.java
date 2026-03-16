@@ -1,15 +1,19 @@
 package com.widgethaus.openaodnotify;
 
+import android.app.AlertDialog;
 import android.content.ComponentName;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -28,6 +32,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -50,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
         displayVersion();
         setupListeners();
         ensureListenerRunning();
+        updateUI();
     }
 
     private void applyUITheme(String theme) {
@@ -71,6 +77,13 @@ public class MainActivity extends AppCompatActivity {
         btnExportLogs = findViewById(R.id.btnExportLogs);
         btnReset = findViewById(R.id.btnReset);
         tvVersion = findViewById(R.id.tvVersion);
+
+        // Hide advanced debug tools in Release builds
+        if (!BuildConfig.DEBUG) {
+            findViewById(R.id.layoutDebugTools).setVisibility(View.GONE);
+            // We keep btnTestOverlay visible if it's outside layoutDebugTools, 
+            // but in your XML it's inside. Let's make sure it's accessible for users.
+        }
     }
 
     private void displayVersion() {
@@ -188,11 +201,47 @@ public class MainActivity extends AppCompatActivity {
                     log.append(line).append("\n");
                 }
             }
+            final String logData = log.toString();
 
+            new AlertDialog.Builder(this)
+                    .setTitle("Export Debug Logs")
+                    .setMessage("Choose how to export the captured debug logs:")
+                    .setPositiveButton("Share", (dialog, which) -> shareLogData(logData))
+                    .setNeutralButton("Save to Downloads", (dialog, which) -> saveLogToDownloads(logData))
+                    .setNegativeButton("Cancel", null)
+                    .show();
+
+        } catch (Exception e) {
+            Toast.makeText(this, "Export failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void saveLogToDownloads(String data) {
+        try {
+            String fileName = "openaod_debug_" + System.currentTimeMillis() + ".txt";
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
+            values.put(MediaStore.Downloads.MIME_TYPE, "text/plain");
+            values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+
+            Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+            if (uri != null) {
+                try (OutputStream os = getContentResolver().openOutputStream(uri)) {
+                    if (os != null) os.write(data.getBytes());
+                }
+                Toast.makeText(this, "Logs saved to Downloads: " + fileName, Toast.LENGTH_LONG).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Save failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void shareLogData(String data) {
+        try {
             File logFile = new File(getExternalFilesDir(null), "openaod_debug_logs.txt");
-            FileOutputStream fos = new FileOutputStream(logFile);
-            fos.write(log.toString().getBytes());
-            fos.close();
+            try (FileOutputStream fos = new FileOutputStream(logFile)) {
+                fos.write(data.getBytes());
+            }
 
             Uri contentUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", logFile);
             Intent shareIntent = new Intent(Intent.ACTION_SEND);
@@ -200,9 +249,8 @@ public class MainActivity extends AppCompatActivity {
             shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
             shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             startActivity(Intent.createChooser(shareIntent, "Share Debug Logs"));
-
         } catch (Exception e) {
-            Toast.makeText(this, "Export failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Share failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
