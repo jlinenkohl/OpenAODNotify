@@ -87,77 +87,13 @@
             android:textColor="?android:attr/textColorPrimary"
             android:layout_marginBottom="8dp"/>
 
-        <com.google.android.material.switchmaterial.SwitchMaterial
-            android:id="@+id/swPowerStatus"
+        <Button
+            android:id="@+id/btnPowerSettings"
+            style="@style/Widget.AppCompat.Button.Colored"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Enable Power Status Indicator"
-            android:layout_marginBottom="8dp"/>
-
-        <LinearLayout
-            android:id="@+id/layoutPowerColors"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Indicator Shape"
-                android:textAppearance="@style/TextAppearance.AppCompat.Caption"
-                android:textColor="?android:attr/textColorSecondary"
-                android:layout_marginBottom="4dp"/>
-
-            <Spinner
-                android:id="@+id/spnPowerShape"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="?attr/colorSurfaceVariant"
-                android:padding="12dp"
-                android:layout_marginBottom="12dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Colors (Hex)"
-                android:textAppearance="@style/TextAppearance.AppCompat.Caption"
-                android:textColor="?android:attr/textColorSecondary"
-                android:layout_marginBottom="4dp"/>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp">
-                <EditText
-                    android:id="@+id/etColorPlugged"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="Plugged (Green)"
-                    android:maxLength="6"
-                    android:singleLine="true"/>
-                <EditText
-                    android:id="@+id/etColorCharging"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="Charging (Yellow)"
-                    android:maxLength="6"
-                    android:singleLine="true"
-                    android:layout_marginStart="8dp"/>
-                <EditText
-                    android:id="@+id/etColorLow"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="Low (Red)"
-                    android:maxLength="6"
-                    android:singleLine="true"
-                    android:layout_marginStart="8dp"/>
-            </LinearLayout>
-        </LinearLayout>
+            android:text="Configure Power Indicator"
+            android:layout_marginBottom="16dp" />
 
         <View
             android:layout_width="match_parent"

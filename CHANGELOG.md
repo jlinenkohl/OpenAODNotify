@@ -5,16 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.4-dev] - 2026-02-14
+## [1.4-dev] - 2026-06-15
 
 ### Added
-- **Power Status Indicator**: New optional feature to show device power state on AOD.
-    - **Plugged In**: Customizable indicator color when connected to power.
-    - **Charging**: Distinct color while actively gaining charge.
-    - **Low Power**: Automatic trigger when battery drops below 15%.
-- **Color Overrides**: Overlay service now supports dynamic color injection from the listener, enabling multi-state indicators without separate profiles.
+- **Dedicated Power Settings Activity**: Migrated power status configuration to a standalone UI for better organization.
+- **RGB Sliders**: Integrated real-time RGB color mixing for Plugged, Charging, and Low Battery states.
+- **Draggable Positioning**: Added support for independent, draggable positioning of the power indicator (separate from notification indicators).
+- **Dual-Layer Rendering**: Updated `OpenAODOverlayService` to support simultaneous rendering of notification and power status layers.
+- **Intent-Driven Lifecycle**: Improved IPC via `power_preview` and `ACTION_REFRESH` for instant UI feedback.
 
-## [1.3-dev] - 2026-02-13
+### Fixed
+- **Overlay Persistence**: Resolved an issue where the overlay would skip updates if a notification was already visible when power state changed.
+- **Position Sync**: Fixed a bug where dragging the power handle wouldn't persist to the correct `power_` prefixed preference keys.
+
+## [1.3-dev] - 2026-03-16
 
 ### Added
 - **Intelligent Filtering Engine**: Implemented multi-level notification logic to reduce AOD clutter.
@@ -34,4 +38,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Debug Tooling**: Restricted advanced debug actions (Reset, Export Logs) to debug builds only.
 
 ## [1.1-dev] - 2026-02-08
-...
+- Initial release with basic shape rendering and accessibility overlay support.

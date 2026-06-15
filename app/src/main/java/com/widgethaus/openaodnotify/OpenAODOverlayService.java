@@ -98,15 +98,6 @@ public class OpenAODOverlayService extends AccessibilityService {
                 lastStartIntent = null;
             } else {
                 lastStartIntent = intent;
-                boolean isPreview = intent.getBooleanExtra("preview", false);
-                boolean force = intent.getBooleanExtra("force", false);
-
-                // Optimization: If already visible and not a preview/force, just refresh timeout
-                if (!isPreview && !force && isOverlayVisible) {
-                    Log.d(TAG, "Overlay already visible, refreshing timeout");
-                    startTimeout(PreferenceUtils.getTimeout(this));
-                    return START_STICKY;
-                }
                 showOverlay(intent);
             }
         }
@@ -115,13 +106,14 @@ public class OpenAODOverlayService extends AccessibilityService {
 
     private void showOverlay(Intent intent) {
         if (wm == null) wm = (WindowManager) getSystemService(WINDOW_SERVICE);
-        cleanupViews();
-
+        
         Bundle extras = intent.getExtras();
         if (extras == null) return;
         boolean isPreview = extras.getBoolean("preview", false);
+        boolean isPowerPreview = extras.getBoolean("power_preview", false);
 
-        if (isPreview) {
+        if (isPreview || isPowerPreview) {
+            cleanupViews();
             PreferenceUtils.ShapeType shapeType = PreferenceUtils.ShapeType.fromId(extras.getInt("shape"));
             int size = extras.getInt("size");
             String colorHex = extras.getString("color");
@@ -139,38 +131,40 @@ public class OpenAODOverlayService extends AccessibilityService {
                 createLineShape(size, colorHex, rounded, sides, minAlpha, maxAlpha, duration);
             }
         } else {
+            cleanupViews();
             // Production: Draw Notification if active
             if (extras.getBoolean("show_notification", false)) {
-                renderShapeInternal(PreferenceUtils.getCurrentShape(this), PreferenceUtils.getColor(this));
+                renderShapeInternal(PreferenceUtils.getCurrentShape(this), PreferenceUtils.getColor(this), false);
             }
             
             // Production: Draw Power Status if active
             if (extras.getBoolean("show_power", false)) {
                 String pColor = extras.getString("power_color");
                 int pShapeId = extras.getInt("power_shape", 0);
-                renderShapeInternal(PreferenceUtils.ShapeType.fromId(pShapeId), pColor);
+                renderShapeInternal(PreferenceUtils.ShapeType.fromId(pShapeId), pColor, true);
             }
         }
         
         isOverlayVisible = true;
-        if (!isPreview) {
+        if (!isPreview && !isPowerPreview) {
             startTimeout(PreferenceUtils.getTimeout(this));
         }
     }
 
-    private void renderShapeInternal(PreferenceUtils.ShapeType shapeType, String colorHex) {
-        int size = PreferenceUtils.getShapeSize(this, shapeType);
+    private void renderShapeInternal(PreferenceUtils.ShapeType shapeType, String colorHex, boolean isPower) {
+        if (colorHex == null) return;
+        int size = isPower ? PreferenceUtils.getPowerShapeSize(this, shapeType) : PreferenceUtils.getShapeSize(this, shapeType);
         int duration = PreferenceUtils.getDuration(this);
         float minAlpha = PreferenceUtils.getMinAlpha(this);
         float maxAlpha = PreferenceUtils.getMaxAlpha(this);
-        boolean rounded = PreferenceUtils.isShapeRounded(this, shapeType);
+        boolean rounded = isPower ? PreferenceUtils.isPowerShapeRounded(this, shapeType) : PreferenceUtils.isShapeRounded(this, shapeType);
 
         if (shapeType.isDraggable()) {
-            int x = PreferenceUtils.getShapeX(this, shapeType);
-            int y = PreferenceUtils.getShapeY(this, shapeType);
+            int x = isPower ? PreferenceUtils.getPowerShapeX(this, shapeType) : PreferenceUtils.getShapeX(this, shapeType);
+            int y = isPower ? PreferenceUtils.getPowerShapeY(this, shapeType) : PreferenceUtils.getShapeY(this, shapeType);
             createDraggableShape(shapeType, size, x, y, false, colorHex, rounded, minAlpha, maxAlpha, duration);
         } else {
-            int sides = PreferenceUtils.getLineSides(this);
+            int sides = isPower ? PreferenceUtils.getPowerLineSides(this) : PreferenceUtils.getLineSides(this);
             createLineShape(size, colorHex, rounded, sides, minAlpha, maxAlpha, duration);
         }
     }
@@ -372,6 +366,7 @@ public class OpenAODOverlayService extends AccessibilityService {
         }
         overlayRoots.clear();
         isOverlayVisible = false;
+        handler.removeCallbacks(timeoutRunnable);
     }
 
     @Override

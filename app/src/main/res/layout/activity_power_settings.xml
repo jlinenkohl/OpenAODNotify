@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:fitsSystemWindows="true"
+    android:background="?android:attr/windowBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Power Status Indicator"
+            android:textAppearance="@style/TextAppearance.AppCompat.Headline"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="8dp"/>
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/swPowerStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Enable Power Status Indicator"
+            android:layout_marginBottom="16dp"/>
+
+        <LinearLayout
+            android:id="@+id/layoutPowerConfig"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- SHAPE & ROUNDED TOGGLE -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Indicator Shape"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+                        android:textColor="?android:attr/textColorSecondary" />
+                    <Spinner
+                        android:id="@+id/spnPowerShape"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/colorSurfaceVariant"
+                        android:padding="12dp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swPowerRounded"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Rounded"
+                    android:layout_marginStart="16dp"/>
+            </LinearLayout>
+
+            <!-- LINE SIDES SELECTOR -->
+            <LinearLayout
+                android:id="@+id/layoutPowerLineSides"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="16dp"
+                android:background="?attr/colorSurface"
+                android:padding="12dp"
+                android:visibility="gone">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Active Sides"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+                    android:textColor="?android:attr/textColorSecondary" />
+                <GridLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:columnCount="2"
+                    android:rowCount="2"
+                    android:layout_marginTop="8dp">
+                    <CheckBox android:id="@+id/cbPowerTop" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Top" />
+                    <CheckBox android:id="@+id/cbPowerBottom" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bottom" />
+                    <CheckBox android:id="@+id/cbPowerLeft" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Left" />
+                    <CheckBox android:id="@+id/cbPowerRight" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Right" />
+                </GridLayout>
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="?android:attr/listDivider"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp" />
+
+            <!-- COLOR SELECTION SECTION -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="State Colors"
+                android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+                android:textColor="?android:attr/textColorSecondary"
+                android:layout_marginBottom="8dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <LinearLayout
+                    android:id="@+id/btnSelectPlugged"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="8dp"
+                    android:background="?attr/selectableItemBackground">
+                    <View android:id="@+id/viewColorPlugged" android:layout_width="40dp" android:layout_height="40dp" android:background="#00FF00"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Plugged" android:textSize="10sp"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/btnSelectCharging"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="8dp"
+                    android:background="?attr/selectableItemBackground">
+                    <View android:id="@+id/viewColorCharging" android:layout_width="40dp" android:layout_height="40dp" android:background="#FFFF00"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Charging" android:textSize="10sp"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/btnSelectLow"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="8dp"
+                    android:background="?attr/selectableItemBackground">
+                    <View android:id="@+id/viewColorLow" android:layout_width="40dp" android:layout_height="40dp" android:background="#FF0000"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Low" android:textSize="10sp"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvEditingColor"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Editing: Plugged"
+                android:layout_gravity="center"
+                android:layout_marginTop="8dp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorAccent"/>
+
+            <!-- COLOR MIXER (Reused from main settings) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="8dp"
+                android:background="?attr/colorSurface"
+                android:padding="12dp">
+
+                <TextView android:text="Red" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="?android:attr/textColorPrimary"/>
+                <SeekBar android:id="@+id/seekPowerRed" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="255" />
+
+                <TextView android:text="Green" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textSize="12sp" android:textColor="?android:attr/textColorPrimary"/>
+                <SeekBar android:id="@+id/seekPowerGreen" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="255" />
+
+                <TextView android:text="Blue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textSize="12sp" android:textColor="?android:attr/textColorPrimary"/>
+                <SeekBar android:id="@+id/seekPowerBlue" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="255" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="?android:attr/listDivider"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp" />
+
+            <!-- SIZE STEPPER -->
+            <include layout="@layout/stepper_field" android:id="@+id/stepperPowerSize"/>
+
+            <!-- POSITIONING SECTION -->
+            <LinearLayout
+                android:id="@+id/layoutPowerPosition"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Positioning"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+                    android:textColor="?android:attr/textColorSecondary" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="X Offset"
+                            android:textSize="10sp"
+                            android:textColor="?android:attr/textColorPrimary"/>
+                        <EditText
+                            android:id="@+id/etPowerX"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberSigned"
+                            android:hint="600" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Y Offset"
+                            android:textSize="10sp"
+                            android:textColor="?android:attr/textColorPrimary"/>
+                        <EditText
+                            android:id="@+id/etPowerY"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberSigned"
+                            android:hint="400" />
+                    </LinearLayout>
+
+                    <GridLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:columnCount="3"
+                        android:rowCount="2"
+                        android:layout_marginStart="16dp">
+                        <View android:layout_width="32dp" android:layout_height="32dp" />
+                        <ImageButton
+                            android:id="@+id/btnPowerUp"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@android:drawable/arrow_up_float"
+                            android:background="?attr/selectableItemBackground"
+                            android:tint="?attr/colorOnSurface"
+                            android:contentDescription="Up" />
+                        <View android:layout_width="32dp" android:layout_height="32dp" />
+                        <ImageButton
+                            android:id="@+id/btnPowerLeft"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@android:drawable/arrow_down_float"
+                            android:rotation="90"
+                            android:background="?attr/selectableItemBackground"
+                            android:tint="?attr/colorOnSurface"
+                            android:contentDescription="Left" />
+                        <ImageButton
+                            android:id="@+id/btnPowerDown"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@android:drawable/arrow_down_float"
+                            android:background="?attr/selectableItemBackground"
+                            android:tint="?attr/colorOnSurface"
+                            android:contentDescription="Down" />
+                        <ImageButton
+                            android:id="@+id/btnPowerRight"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@android:drawable/arrow_up_float"
+                            android:rotation="90"
+                            android:background="?attr/selectableItemBackground"
+                            android:tint="?attr/colorOnSurface"
+                            android:contentDescription="Right" />
+                    </GridLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnPowerSave"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save &amp; Apply"
+            android:layout_marginTop="32dp"
+            android:layout_marginBottom="32dp" />
+
+    </LinearLayout>
+</ScrollView>

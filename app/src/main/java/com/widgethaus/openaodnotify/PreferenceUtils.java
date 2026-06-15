@@ -134,6 +134,30 @@ public class PreferenceUtils {
         return ShapeType.fromId(getPrefs(context).getInt(getPrefix(context) + "power_status_shape", 0));
     }
 
+    public static int getPowerShapeSize(Context context, ShapeType shape) {
+        String key = getPrefix(context) + "power_" + shape.name() + "_size";
+        int def = 35;
+        if (shape == ShapeType.RING) def = 80;
+        if (shape == ShapeType.LINES) def = 5;
+        return getPrefs(context).getInt(key, def);
+    }
+
+    public static int getPowerShapeX(Context context, ShapeType shape) {
+        return getPrefs(context).getInt(getPrefix(context) + "power_" + shape.name() + "_x", 600);
+    }
+
+    public static int getPowerShapeY(Context context, ShapeType shape) {
+        return getPrefs(context).getInt(getPrefix(context) + "power_" + shape.name() + "_y", 400);
+    }
+
+    public static boolean isPowerShapeRounded(Context context, ShapeType shape) {
+        return getPrefs(context).getBoolean(getPrefix(context) + "power_" + shape.name() + "_rounded", true);
+    }
+
+    public static int getPowerLineSides(Context context) {
+        return getPrefs(context).getInt(getPrefix(context) + "power_LINES_sides", 15);
+    }
+
     public static void savePowerStatusSettings(Context context, boolean enabled, int shapeId, String plugged, String low, String charging) {
         SharedPreferences.Editor editor = getPrefs(context).edit();
         String p = getPrefix(context);
@@ -142,6 +166,19 @@ public class PreferenceUtils {
         editor.putString(p + "power_status_color_plugged", plugged);
         editor.putString(p + "power_status_color_low", low);
         editor.putString(p + "power_status_color_charging", charging);
+        editor.apply();
+    }
+
+    public static void savePowerShapeSettings(Context context, ShapeType shape, int size, int x, int y, boolean rounded, int sides) {
+        SharedPreferences.Editor editor = getPrefs(context).edit();
+        String p = getPrefix(context) + "power_" + shape.name() + "_";
+        editor.putInt(p + "size", size);
+        editor.putInt(p + "x", x);
+        editor.putInt(p + "y", y);
+        editor.putBoolean(p + "rounded", rounded);
+        if (shape == ShapeType.LINES) {
+            editor.putInt(getPrefix(context) + "power_LINES_sides", sides);
+        }
         editor.apply();
     }
 
