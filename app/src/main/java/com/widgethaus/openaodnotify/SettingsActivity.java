@@ -29,15 +29,15 @@ import com.google.android.material.switchmaterial.SwitchMaterial;
 public class SettingsActivity extends AppCompatActivity {
     private static final String TAG = "SettingsActivity";
 
-    private EditText etX, etY, etColor;
+    private EditText etX, etY, etColor, etColorPlugged, etColorCharging, etColorLow;
     private View colorPreview;
     private SeekBar seekRed, seekGreen, seekBlue;
-    private Spinner spnShape, spnProfile, spnUITheme;
+    private Spinner spnShape, spnPowerShape, spnProfile, spnUITheme;
     private Button btnSave, btnDiscovery;
     private ImageButton btnUp, btnDown, btnLeft, btnRight;
-    private LinearLayout layoutPosition, layoutLineSides;
+    private LinearLayout layoutPosition, layoutLineSides, layoutPowerColors;
     private CheckBox cbTop, cbBottom, cbLeft, cbRight;
-    private SwitchMaterial swRounded;
+    private SwitchMaterial swRounded, swPowerStatus;
     private boolean isUpdatingFromBroadcast = false;
     private boolean isUpdatingFromSliders = false;
     private boolean isInitializing = true;
@@ -94,6 +94,7 @@ public class SettingsActivity extends AppCompatActivity {
         spnUITheme = findViewById(R.id.spnUITheme);
         spnProfile = findViewById(R.id.spnProfile);
         spnShape = findViewById(R.id.spnShape);
+        spnPowerShape = findViewById(R.id.spnPowerShape);
         etX = findViewById(R.id.etX);
         etY = findViewById(R.id.etY);
         etColor = findViewById(R.id.etColor);
@@ -110,6 +111,11 @@ public class SettingsActivity extends AppCompatActivity {
         cbLeft = findViewById(R.id.cbLeft);
         cbRight = findViewById(R.id.cbRight);
         swRounded = findViewById(R.id.swRounded);
+        swPowerStatus = findViewById(R.id.swPowerStatus);
+        layoutPowerColors = findViewById(R.id.layoutPowerColors);
+        etColorPlugged = findViewById(R.id.etColorPlugged);
+        etColorCharging = findViewById(R.id.etColorCharging);
+        etColorLow = findViewById(R.id.etColorLow);
         btnUp = findViewById(R.id.btnUp);
         btnDown = findViewById(R.id.btnDown);
         btnLeft = findViewById(R.id.btnLeft);
@@ -137,6 +143,7 @@ public class SettingsActivity extends AppCompatActivity {
         ArrayAdapter<String> shapeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, labels);
         shapeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spnShape.setAdapter(shapeAdapter);
+        spnPowerShape.setAdapter(shapeAdapter);
     }
 
     private void loadGlobalSettings() {
@@ -158,6 +165,14 @@ public class SettingsActivity extends AppCompatActivity {
 
         etColor.setText(PreferenceUtils.getColor(this));
         updateSlidersFromHex(PreferenceUtils.getColor(this));
+        
+        swPowerStatus.setChecked(PreferenceUtils.isPowerStatusEnabled(this));
+        etColorPlugged.setText(PreferenceUtils.getPowerStatusColorPlugged(this));
+        etColorCharging.setText(PreferenceUtils.getPowerStatusColorCharging(this));
+        etColorLow.setText(PreferenceUtils.getPowerStatusColorLow(this));
+        spnPowerShape.setSelection(PreferenceUtils.getPowerStatusShape(this).getId(), false);
+        layoutPowerColors.setVisibility(swPowerStatus.isChecked() ? View.VISIBLE : View.GONE);
+
         ((EditText) stepperDuration.findViewById(R.id.etValue)).setText(String.valueOf(PreferenceUtils.getDuration(this)));
         ((EditText) stepperMinAlpha.findViewById(R.id.etValue)).setText(String.valueOf(PreferenceUtils.getMinAlpha(this)));
         ((EditText) stepperMaxAlpha.findViewById(R.id.etValue)).setText(String.valueOf(PreferenceUtils.getMaxAlpha(this)));
@@ -250,6 +265,7 @@ public class SettingsActivity extends AppCompatActivity {
         etX.addTextChangedListener(previewWatcher);
         etY.addTextChangedListener(previewWatcher);
         swRounded.setOnCheckedChangeListener((v, c) -> { if(!isInitializing) updatePreview(); });
+        swPowerStatus.setOnCheckedChangeListener((v, c) -> layoutPowerColors.setVisibility(c ? View.VISIBLE : View.GONE));
         
         View.OnClickListener sideListener = v -> { if(!isInitializing) updatePreview(); };
         cbTop.setOnClickListener(sideListener); cbBottom.setOnClickListener(sideListener);
@@ -361,6 +377,14 @@ public class SettingsActivity extends AppCompatActivity {
     private void saveAll() {
         try {
             PreferenceUtils.ShapeType currentShape = PreferenceUtils.ShapeType.fromId(spnShape.getSelectedItemPosition());
+            
+            PreferenceUtils.savePowerStatusSettings(this, 
+                swPowerStatus.isChecked(),
+                spnPowerShape.getSelectedItemPosition(),
+                etColorPlugged.getText().toString(),
+                etColorLow.getText().toString(),
+                etColorCharging.getText().toString());
+
             PreferenceUtils.saveGlobalSettings(this, etColor.getText().toString(), 
                 (int)Float.parseFloat(((EditText) stepperDuration.findViewById(R.id.etValue)).getText().toString()),
                 Float.parseFloat(((EditText) stepperMinAlpha.findViewById(R.id.etValue)).getText().toString()),
@@ -375,6 +399,12 @@ public class SettingsActivity extends AppCompatActivity {
                 swRounded.isChecked(), getSelectedSides());
 
             Toast.makeText(this, "Settings Saved", Toast.LENGTH_SHORT).show();
+            
+            // Notify listener to refresh its cached preferences
+            Intent refreshIntent = new Intent(OpenAODListener.ACTION_REFRESH);
+            refreshIntent.setPackage(getPackageName());
+            sendBroadcast(refreshIntent);
+
             stopOverlayService();
             finish();
         } catch (Exception e) { Toast.makeText(this, "Check inputs", Toast.LENGTH_SHORT).show(); }

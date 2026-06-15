@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
@@ -23,6 +24,7 @@ public class OpenAODListener extends NotificationListenerService {
     private static boolean isConnected = false;
     public static boolean hasNotification = false;
     private boolean isOverlayRunning = false;
+    private String lastColorSent = null;
     
     private BroadcastReceiver screenReceiver;
     private long lastNotificationTime = 0;
@@ -33,6 +35,9 @@ public class OpenAODListener extends NotificationListenerService {
     private int prefMaxAgeMinutes = 60;
     private Set<String> prefEnabledCats = new HashSet<>();
     private Set<String> prefEnabledApps = new HashSet<>();
+    private boolean isPowerStatusEnabled = false;
+    private String currentPowerColor = null;
+    private boolean isPowerStatusActive = false;
 
     public static boolean isServiceConnected() {
         return isConnected;
@@ -61,6 +66,7 @@ public class OpenAODListener extends NotificationListenerService {
         prefMaxAgeMinutes = PreferenceUtils.getMaxNotifAgeMinutes(this);
         prefEnabledCats = prefs.getStringSet("filter_enabled_categories", new HashSet<>());
         prefEnabledApps = prefs.getStringSet("filter_enabled_apps", new HashSet<>());
+        isPowerStatusEnabled = PreferenceUtils.isPowerStatusEnabled(this);
         Log.d(TAG, "Preferences loaded/refreshed");
     }
 
@@ -83,11 +89,48 @@ public class OpenAODListener extends NotificationListenerService {
             
             Log.d(TAG, "State check: hasNotification=" + hasNotification);
             
-            if (changed) {
-                handleOverlayUpdate();
-            }
+            updatePowerStatus(null);
+            handleOverlayUpdate();
         } catch (Exception e) {
             Log.e(TAG, "Error checking notifications", e);
+        }
+    }
+
+    private void updatePowerStatus(Intent intent) {
+        if (!isPowerStatusEnabled) {
+            isPowerStatusActive = false;
+            currentPowerColor = null;
+            return;
+        }
+
+        if (intent == null) {
+            intent = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        }
+        if (intent == null) return;
+
+        int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+        int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+        int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
+        
+        float batteryPct = level * 100 / (float)scale;
+        
+        boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING;
+        boolean isPlugged = plugged > 0;
+        boolean isLow = batteryPct <= 15; // Standard 15% threshold
+
+        if (isCharging) {
+            isPowerStatusActive = true;
+            currentPowerColor = PreferenceUtils.getPowerStatusColorCharging(this);
+        } else if (isPlugged) {
+            isPowerStatusActive = true;
+            currentPowerColor = PreferenceUtils.getPowerStatusColorPlugged(this);
+        } else if (isLow) {
+            isPowerStatusActive = true;
+            currentPowerColor = PreferenceUtils.getPowerStatusColorLow(this);
+        } else {
+            isPowerStatusActive = false;
+            currentPowerColor = null;
         }
     }
 
@@ -95,9 +138,13 @@ public class OpenAODListener extends NotificationListenerService {
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         boolean isScreenOff = pm != null && !pm.isInteractive();
 
-        if (hasNotification && isScreenOff) {
-            startOverlayService(false);
-        } else if (!hasNotification) {
+        boolean shouldShow = (hasNotification || isPowerStatusActive) && isScreenOff;
+
+        if (shouldShow) {
+            String powerColor = isPowerStatusActive ? currentPowerColor : null;
+            Integer powerShape = isPowerStatusActive ? PreferenceUtils.getPowerStatusShape(this).getId() : null;
+            startOverlayService(false, hasNotification, powerColor, powerShape);
+        } else {
             stopOverlayService();
         }
     }
@@ -157,7 +204,6 @@ public class OpenAODListener extends NotificationListenerService {
                 String action = intent.getAction();
                 if (Intent.ACTION_SCREEN_OFF.equals(action)) {
                     updateNotificationState();
-                    if (hasNotification) startOverlayService(false);
                 } else if (Intent.ACTION_SCREEN_ON.equals(action)) {
                     // Debounce screen on to prevent flicker during quick unlock
                     long timeSinceNotif = System.currentTimeMillis() - lastNotificationTime;
@@ -168,8 +214,10 @@ public class OpenAODListener extends NotificationListenerService {
                 } else if (ACTION_REFRESH.equals(action)) {
                     Log.d(TAG, "🔄 Refreshing listener state & prefs");
                     loadPreferences();
+                    updatePowerStatus(null);
                     updateNotificationState();
-                    // Always re-evaluate overlay on explicit refresh
+                } else if (Intent.ACTION_BATTERY_CHANGED.equals(action)) {
+                    updatePowerStatus(intent);
                     handleOverlayUpdate();
                 }
             }
@@ -179,6 +227,7 @@ public class OpenAODListener extends NotificationListenerService {
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_USER_PRESENT);
+        filter.addAction(Intent.ACTION_BATTERY_CHANGED);
         filter.addAction(ACTION_REFRESH);
         
         int flags = 0;
@@ -188,14 +237,28 @@ public class OpenAODListener extends NotificationListenerService {
         registerReceiver(screenReceiver, filter, flags);
     }
 
-    private void startOverlayService(boolean force) {
-        // Redundancy check: only start if not running OR if we want to force a refresh (new notif)
-        if (isOverlayRunning && !force) return;
+    private void startOverlayService(boolean force, boolean showNotif, String powerColor, Integer powerShape) {
+        // Build a unique state string to check if we actually need to restart the service
+        String currentState = "notif:" + showNotif + "|pColor:" + powerColor + "|pShape:" + powerShape;
+        if (isOverlayRunning && !force && currentState.equals(lastColorSent)) return;
 
-        Log.d(TAG, "Starting Overlay Service (force=" + force + ")");
+        Log.d(TAG, "Starting Overlay Service: " + currentState);
         Intent serviceIntent = new Intent(this, OpenAODOverlayService.class);
         serviceIntent.setAction(OpenAODOverlayService.ACTION_START);
         if (force) serviceIntent.putExtra("force", true);
+        
+        if (showNotif) {
+            serviceIntent.putExtra("show_notification", true);
+        }
+        if (powerColor != null) {
+            serviceIntent.putExtra("show_power", true);
+            serviceIntent.putExtra("power_color", powerColor);
+            if (powerShape != null) {
+                serviceIntent.putExtra("power_shape", (int)powerShape);
+            }
+        }
+        
+        lastColorSent = currentState;
         startService(serviceIntent);
         isOverlayRunning = true;
     }
@@ -224,7 +287,8 @@ public class OpenAODListener extends NotificationListenerService {
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         if (pm != null && !pm.isInteractive()) {
             // New notification arrived while screen is off, force overlay refresh
-            startOverlayService(true);
+            updatePowerStatus(null);
+            handleOverlayUpdate();
         }
     }
 

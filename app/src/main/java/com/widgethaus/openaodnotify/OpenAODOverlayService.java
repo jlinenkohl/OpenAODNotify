@@ -118,30 +118,60 @@ public class OpenAODOverlayService extends AccessibilityService {
         cleanupViews();
 
         Bundle extras = intent.getExtras();
-        boolean isPreview = extras != null && extras.getBoolean("preview", false);
-        
-        PreferenceUtils.ShapeType shapeType = isPreview ? 
-                PreferenceUtils.ShapeType.fromId(extras.getInt("shape")) : PreferenceUtils.getCurrentShape(this);
-        
-        int size = isPreview ? extras.getInt("size") : PreferenceUtils.getShapeSize(this, shapeType);
-        String colorHex = isPreview ? extras.getString("color") : PreferenceUtils.getColor(this);
-        int duration = isPreview ? extras.getInt("duration") : PreferenceUtils.getDuration(this);
-        float minAlpha = isPreview ? extras.getFloat("min_alpha") : PreferenceUtils.getMinAlpha(this);
-        float maxAlpha = isPreview ? extras.getFloat("max_alpha") : PreferenceUtils.getMaxAlpha(this);
-        boolean rounded = isPreview ? extras.getBoolean("rounded") : PreferenceUtils.isShapeRounded(this, shapeType);
+        if (extras == null) return;
+        boolean isPreview = extras.getBoolean("preview", false);
 
-        if (shapeType.isDraggable()) {
-            int x = isPreview ? extras.getInt("x") : PreferenceUtils.getShapeX(this, shapeType);
-            int y = isPreview ? extras.getInt("y") : PreferenceUtils.getShapeY(this, shapeType);
-            createDraggableShape(shapeType, size, x, y, isPreview, colorHex, rounded, minAlpha, maxAlpha, duration);
+        if (isPreview) {
+            PreferenceUtils.ShapeType shapeType = PreferenceUtils.ShapeType.fromId(extras.getInt("shape"));
+            int size = extras.getInt("size");
+            String colorHex = extras.getString("color");
+            int duration = extras.getInt("duration");
+            float minAlpha = extras.getFloat("min_alpha");
+            float maxAlpha = extras.getFloat("max_alpha");
+            boolean rounded = extras.getBoolean("rounded");
+            
+            if (shapeType.isDraggable()) {
+                int x = extras.getInt("x");
+                int y = extras.getInt("y");
+                createDraggableShape(shapeType, size, x, y, true, colorHex, rounded, minAlpha, maxAlpha, duration);
+            } else {
+                int sides = extras.getInt("sides");
+                createLineShape(size, colorHex, rounded, sides, minAlpha, maxAlpha, duration);
+            }
         } else {
-            int sides = isPreview ? extras.getInt("sides") : PreferenceUtils.getLineSides(this);
-            createLineShape(size, colorHex, rounded, sides, minAlpha, maxAlpha, duration);
+            // Production: Draw Notification if active
+            if (extras.getBoolean("show_notification", false)) {
+                renderShapeInternal(PreferenceUtils.getCurrentShape(this), PreferenceUtils.getColor(this));
+            }
+            
+            // Production: Draw Power Status if active
+            if (extras.getBoolean("show_power", false)) {
+                String pColor = extras.getString("power_color");
+                int pShapeId = extras.getInt("power_shape", 0);
+                renderShapeInternal(PreferenceUtils.ShapeType.fromId(pShapeId), pColor);
+            }
         }
         
         isOverlayVisible = true;
         if (!isPreview) {
             startTimeout(PreferenceUtils.getTimeout(this));
+        }
+    }
+
+    private void renderShapeInternal(PreferenceUtils.ShapeType shapeType, String colorHex) {
+        int size = PreferenceUtils.getShapeSize(this, shapeType);
+        int duration = PreferenceUtils.getDuration(this);
+        float minAlpha = PreferenceUtils.getMinAlpha(this);
+        float maxAlpha = PreferenceUtils.getMaxAlpha(this);
+        boolean rounded = PreferenceUtils.isShapeRounded(this, shapeType);
+
+        if (shapeType.isDraggable()) {
+            int x = PreferenceUtils.getShapeX(this, shapeType);
+            int y = PreferenceUtils.getShapeY(this, shapeType);
+            createDraggableShape(shapeType, size, x, y, false, colorHex, rounded, minAlpha, maxAlpha, duration);
+        } else {
+            int sides = PreferenceUtils.getLineSides(this);
+            createLineShape(size, colorHex, rounded, sides, minAlpha, maxAlpha, duration);
         }
     }
 

@@ -35,3 +35,9 @@ The "Health Monitor".
 ### Logic vs. Rendering Split
 - **Decision**: Separated notification detection (`Listener`) from visual rendering (`Service`).
 - **Reasoning**: Keeps the complex logic of notification filtering and state management isolated from the low-level WindowManager calls, making the app easier to test and port.
+
+### Power Status Integration (Dual-Overlay Stack)
+- **Decision**: Power status and Notifications can now be rendered simultaneously using a "Stacking" approach in the `OverlayService`.
+- **Reasoning**: This allows for a clear visual hierarchy (e.g., device borders for battery, center dot for notifications). Reusing the same service ensures perfect synchronization of breathing animations and minimizes system overhead.
+- **Implementation**: The `Listener` sends a composite state intent. The `Service` iterates through active flags and renders multiple `View` instances to the `WindowManager`.
+- **Pitfall**: If a user selects the same draggable coordinates for both shapes, they will overlap. This is a known trade-off for simplicity, mitigated by suggesting "Borders" for power status.

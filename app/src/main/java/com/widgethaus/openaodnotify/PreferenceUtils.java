@@ -113,6 +113,38 @@ public class PreferenceUtils {
         return ShapeType.fromId(getPrefs(context).getInt(getPrefix(context) + "current_shape", 0));
     }
 
+    // Power Status Settings
+    public static boolean isPowerStatusEnabled(Context context) {
+        return getPrefs(context).getBoolean(getPrefix(context) + "power_status_enabled", false);
+    }
+
+    public static String getPowerStatusColorPlugged(Context context) {
+        return getPrefs(context).getString(getPrefix(context) + "power_status_color_plugged", "00FF00"); // Green
+    }
+
+    public static String getPowerStatusColorLow(Context context) {
+        return getPrefs(context).getString(getPrefix(context) + "power_status_color_low", "FF0000"); // Red
+    }
+
+    public static String getPowerStatusColorCharging(Context context) {
+        return getPrefs(context).getString(getPrefix(context) + "power_status_color_charging", "FFFF00"); // Yellow
+    }
+
+    public static ShapeType getPowerStatusShape(Context context) {
+        return ShapeType.fromId(getPrefs(context).getInt(getPrefix(context) + "power_status_shape", 0));
+    }
+
+    public static void savePowerStatusSettings(Context context, boolean enabled, int shapeId, String plugged, String low, String charging) {
+        SharedPreferences.Editor editor = getPrefs(context).edit();
+        String p = getPrefix(context);
+        editor.putBoolean(p + "power_status_enabled", enabled);
+        editor.putInt(p + "power_status_shape", shapeId);
+        editor.putString(p + "power_status_color_plugged", plugged);
+        editor.putString(p + "power_status_color_low", low);
+        editor.putString(p + "power_status_color_charging", charging);
+        editor.apply();
+    }
+
     // --- Intelligent Filtering Settings ---
     public static int getMaxNotifAgeMinutes(Context context) {
         return getPrefs(context).getInt(getPrefix(context) + "max_notif_age", 60);
