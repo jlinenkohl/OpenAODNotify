@@ -2,6 +2,30 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+// Short git commit hash, used to make debug builds distinguishable from one another
+// (release versionName intentionally omits this - releases are tagged in git instead).
+fun gitShortHash(): String {
+    return try {
+        fun run(vararg cmd: String): String {
+            val process = ProcessBuilder(*cmd)
+                .directory(project.rootDir)
+                .redirectErrorStream(true)
+                .start()
+            val output = process.inputStream.bufferedReader().readText().trim()
+            process.waitFor()
+            return output
+        }
+
+        val hash = run("git", "rev-parse", "--short=7", "HEAD").ifEmpty { "nogit" }
+
+        // Flag builds made from an uncommitted working tree, since those won't
+        // correspond to any commit a teammate (or future you) could check out.
+        val isDirty = run("git", "status", "--porcelain").isNotEmpty()
+        if (isDirty) "$hash-dirty" else hash
+    } catch (e: Exception) {
+        "nogit"
+    }
+}
 
 android {
     signingConfigs {
@@ -36,7 +60,8 @@ android {
 
     buildTypes {
         debug {
-            versionNameSuffix = "-debug"
+            // e.g. "1.4.1-debug+a1b2c3d" so every debug build is distinguishable at a glance.
+            versionNameSuffix = "-debug+${gitShortHash()}"
         }
         release {
             isMinifyEnabled = false

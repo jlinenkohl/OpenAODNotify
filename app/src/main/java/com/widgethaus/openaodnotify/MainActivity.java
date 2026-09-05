@@ -375,6 +375,7 @@ public class MainActivity extends AppCompatActivity {
     private void updateOverlayTelemetryDisplay() {
         if (tvOverlayTelemetry == null) return;
         Map<LocalDate, Long> telemetry = PreferenceUtils.getRecentOverlayTelemetry(this, 7);
+        Map<LocalDate, Long> notifCounts = PreferenceUtils.getRecentNotificationCounts(this, 7);
         DateTimeFormatter labelFormat = DateTimeFormatter.ofPattern("EEE M/d", Locale.getDefault());
         LocalDate today = LocalDate.now();
         StringBuilder sb = new StringBuilder();
@@ -383,8 +384,9 @@ public class MainActivity extends AppCompatActivity {
             long totalSeconds = entry.getValue() / 1000;
             long mins = totalSeconds / 60;
             long secs = totalSeconds % 60;
+            long notifs = notifCounts.getOrDefault(date, 0L);
             String label = date.equals(today) ? "Today    " : date.format(labelFormat);
-            sb.append(String.format(Locale.getDefault(), "%-9s %3dm %02ds%n", label, mins, secs));
+            sb.append(String.format(Locale.getDefault(), "%-9s %3dm %02ds  |  %3d notifs%n", label, mins, secs, notifs));
         }
         tvOverlayTelemetry.setText(sb.toString().trim());
     }
