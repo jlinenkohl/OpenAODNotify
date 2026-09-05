@@ -3,7 +3,7 @@
 This document defines the technical constraints and project vision to ensure consistent AI collaboration, regardless of which agent (GitHub Copilot, Gemini, Claude, etc.) is being used. It is the single source of truth — see `AGENTS.md` / `GEMINI.md` for pointers used by other agent tooling.
 
 ## Project Vision
-A high-performance, privacy-first notification overlay for Android (AOD-focused). Current Version: `1.4.1`.
+A high-performance, privacy-first notification overlay for Android (AOD-focused). Current Version: `1.4.2`.
 
 ## Technical Constraints & Standards
 - **Zero External Dependencies**: Use standard Android/Material components only. Avoid 3rd-party libraries.

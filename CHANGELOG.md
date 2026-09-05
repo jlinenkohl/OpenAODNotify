@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.4.2] - 2026-09-05
 
 ### Added
 - **Debug: Build Identifier in Version String**: Debug builds now append the short git commit hash (and a `-dirty` flag if the working tree has uncommitted changes) to `versionName`, e.g. `1.4.1-debug+a1b2c3d`. Computed at build time in `app/build.gradle.kts`. Release builds are unaffected — `versionName` stays exactly as set (e.g. `1.4.1`), since releases are already distinguished by git tags.
