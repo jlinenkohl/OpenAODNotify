@@ -312,7 +312,7 @@
                         android:layout_height="32dp"
                         android:src="@android:drawable/arrow_up_float"
                         android:background="?attr/selectableItemBackground"
-                        android:tint="?attr/colorOnSurface"
+                        app:tint="?attr/colorOnSurface"
                         android:contentDescription="Up" />
                     <View android:layout_width="32dp" android:layout_height="32dp" />
                     <ImageButton
@@ -322,7 +322,7 @@
                         android:src="@android:drawable/arrow_down_float"
                         android:rotation="90"
                         android:background="?attr/selectableItemBackground"
-                        android:tint="?attr/colorOnSurface"
+                        app:tint="?attr/colorOnSurface"
                         android:contentDescription="Left" />
                     <ImageButton
                         android:id="@+id/btnDown"
@@ -330,7 +330,7 @@
                         android:layout_height="32dp"
                         android:src="@android:drawable/arrow_down_float"
                         android:background="?attr/selectableItemBackground"
-                        android:tint="?attr/colorOnSurface"
+                        app:tint="?attr/colorOnSurface"
                         android:contentDescription="Down" />
                     <ImageButton
                         android:id="@+id/btnRight"
@@ -339,7 +339,7 @@
                         android:src="@android:drawable/arrow_up_float"
                         android:rotation="90"
                         android:background="?attr/selectableItemBackground"
-                        android:tint="?attr/colorOnSurface"
+                        app:tint="?attr/colorOnSurface"
                         android:contentDescription="Right" />
                 </GridLayout>
             </LinearLayout>
