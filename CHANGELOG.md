@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Debug: Build Identifier in Version String**: Debug builds now append the short git commit hash (and a `-dirty` flag if the working tree has uncommitted changes) to `versionName`, e.g. `1.4.1-debug+a1b2c3d`. Computed at build time in `app/build.gradle.kts`. Release builds are unaffected — `versionName` stays exactly as set (e.g. `1.4.1`), since releases are already distinguished by git tags.
 - **Debug: Notification-Triggered-Overlay Count Telemetry**: Added a second fixed-size 7-slot rolling counter tracking how many valid (filtered) notifications actually triggered the overlay per day, shown alongside the existing overlay-visible-time table in the debug panel. Used as an inferential proxy to separate genuine AOD-on time from this app's own notification-driven activity, since the two can't be directly distinguished with public APIs.
+- **Build: Explicit Release Signing Verification**: Added a `verifyReleaseSigning` Gradle task that runs after `assembleRelease` and fails the build loudly if the release APK isn't signed with the expected release certificate. Previously, signing happened silently inside `packageRelease` with no dedicated task or check that the correct keystore/credentials were actually used. Now required as part of the release protocol.
+
+### Fixed
+- **Build: Resolved all lint build errors**: Removed an invalid top-level `<uses-permission>` declaration for `BIND_NOTIFICATION_LISTENER_SERVICE` in `AndroidManifest.xml` (signature-level permission, only valid via the `<service android:permission=...>` attribute which was already present and unaffected) and replaced 8 uses of `android:tint` with `app:tint` per AppCompat lint requirements. `./gradlew lintDebug`/`lintRelease` previously failed with 9 errors; both now pass clean.
 
 ## [1.4.1] - 2026-09-05
 

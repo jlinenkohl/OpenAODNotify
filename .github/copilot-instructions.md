@@ -20,7 +20,7 @@ A high-performance, privacy-first notification overlay for Android (AOD-focused)
     2. Bump `versionCode` (increment) and `versionName` (remove `-dev`) in `app/build.gradle.kts`.
     3. Update this file's version reference and finalize the latest `CHANGELOG.md` entry (ensure date and version match).
     4. Before building/committing: scan the full working tree diff and, when in doubt, the full `git log --all -p` history for hardcoded secrets, credentials, device identifiers, or other sensitive data that shouldn't be committed. Resolve any findings before proceeding.
-    5. Execute a clean build: `./gradlew clean assembleRelease`.
+    5. Execute a clean build and verify signing: `./gradlew clean assembleRelease verifyReleaseSigning`. This runs lint (wired into `assemble*`), builds the release APK, and fails loudly if the APK isn't signed with the expected release certificate (`expectedReleaseCertSha256` in `app/build.gradle.kts`) — never proceed past a failure here.
     6. Rename the output APK to `OpenAODNotify-[VERSION].apk` in `app/release/`.
     7. Commit, Tag (`v[VERSION]`), and Push to `main`.
     8. Create a GitHub Release using `gh release create` with the APK and changelog notes.

@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
 }
@@ -91,4 +94,65 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+}
+
+// Fails the build loudly if the release APK isn't signed with our actual release
+// certificate. Signing is otherwise silent (baked into packageRelease); this makes
+// it an explicit, visible, mandatory step - required as part of the release protocol
+// in .github/copilot-instructions.md so a misconfigured/missing keystore is caught
+// immediately instead of shipping an unsigned or debug-signed APK.
+val expectedReleaseCertSha256 = "60E6240414681F8CAF90659E626948E03874F73EBAD4D80956E20867A03C7F6C"
+
+tasks.register("verifyReleaseSigning") {
+    group = "verification"
+    description = "Verifies the assembled release APK is signed with the expected release certificate."
+    dependsOn("assembleRelease")
+
+    doLast {
+        val apk = layout.buildDirectory.file("outputs/apk/release/app-release.apk").get().asFile
+        if (!apk.exists()) {
+            throw GradleException("Release APK not found at ${apk.path} - assembleRelease may have failed.")
+        }
+
+        val localProps = project.rootProject.file("local.properties")
+        val sdkDirFromProps = if (localProps.exists()) {
+            val p = Properties()
+            FileInputStream(localProps).use { stream -> p.load(stream) }
+            p.getProperty("sdk.dir")
+        } else null
+
+        val sdkDir = sdkDirFromProps ?: System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_ROOT")
+            ?: throw GradleException("Could not locate Android SDK (checked local.properties sdk.dir, ANDROID_HOME, ANDROID_SDK_ROOT).")
+
+        val apksigner = file(sdkDir).resolve("build-tools").listFiles()
+            ?.filter { it.resolve("apksigner").exists() }
+            ?.maxByOrNull { it.name }
+            ?.resolve("apksigner")
+            ?: throw GradleException("Could not find apksigner under $sdkDir/build-tools/*/")
+
+        val process = ProcessBuilder(apksigner.path, "verify", "--print-certs", apk.path)
+            .redirectErrorStream(true)
+            .start()
+        val output = process.inputStream.bufferedReader().readText()
+        val exitCode = process.waitFor()
+
+        if (exitCode != 0) {
+            throw GradleException("apksigner verify FAILED for ${apk.name} - the APK is not validly signed!\n$output")
+        }
+
+        val actualSha256 = Regex("SHA-256 digest:\\s*([0-9a-fA-F]+)").find(output)?.groupValues?.get(1)?.uppercase()
+            ?: throw GradleException("Could not parse a SHA-256 certificate digest from apksigner output:\n$output")
+
+        if (actualSha256 != expectedReleaseCertSha256) {
+            throw GradleException(
+                "Release APK is signed, but with an UNEXPECTED certificate!\n" +
+                "  Expected SHA-256: $expectedReleaseCertSha256\n" +
+                "  Actual SHA-256:   $actualSha256\n" +
+                "This likely means the wrong keystore/local.properties was used, or the signing " +
+                "certificate was intentionally rotated (if so, update expectedReleaseCertSha256 in app/build.gradle.kts)."
+            )
+        }
+
+        println("Release APK signing verified: ${apk.name} is signed with the expected release certificate ($actualSha256).")
+    }
 }
