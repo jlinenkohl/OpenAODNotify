@@ -1,7 +1,6 @@
 package com.widgethaus.openaodnotify;
 
 import android.accessibilityservice.AccessibilityService;
-import android.animation.ObjectAnimator;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -14,6 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
@@ -22,11 +22,16 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.core.app.NotificationCompat;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,13 +42,30 @@ public class OpenAODOverlayService extends AccessibilityService {
     public static final String ACTION_POSITION_UPDATE = "com.widgethaus.openaodnotify.POSITION_UPDATE";
     private static final String CHANNEL_ID = "AOD_Overlay_Channel";
 
+    // Breathing animation is manually paced (instead of ObjectAnimator/Choreographer-driven)
+    // because ValueAnimator.setFrameDelay() is a no-op starting at API 35 (our targetSdk),
+    // so it can no longer be used to cap animation frame rate. Capping the frame rate here
+    // significantly cuts framebuffer/compositor wakeups during long AOD "breathing" sessions,
+    // since a slow alpha pulse doesn't benefit from 60/90/120Hz panel refresh rates.
+    // The target FPS is a runtime-adjustable debug preference (see PreferenceUtils) so it
+    // can be tuned/verified per-device without a rebuild.
+
     private WindowManager wm;
     private List<View> overlayRoots = new ArrayList<>();
-    private List<ObjectAnimator> animators = new ArrayList<>();
+    private List<BreathingTask> breathingTasks = new ArrayList<>();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable timeoutRunnable;
     private boolean isOverlayVisible = false;
     private Intent lastStartIntent;
+
+    // --- Overlay-visible time telemetry (see PreferenceUtils.getRecentOverlayTelemetry) ---
+    // Tracks wall-clock time the overlay has actually been added to the WindowManager
+    // (i.e. the display was showing our content), persisted per-day so it survives
+    // "Reset & Initialize", force-stop, and reboot. Flushed periodically (not just at
+    // session end) so an abrupt process kill loses at most one checkpoint interval.
+    private static final long TELEMETRY_CHECKPOINT_INTERVAL_MS = 60_000; // 1 minute
+    private long overlaySessionStartMillis = 0;
+    private final Runnable telemetryCheckpointRunnable = this::checkpointOverlaySession;
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {}
@@ -146,8 +168,49 @@ public class OpenAODOverlayService extends AccessibilityService {
         }
         
         isOverlayVisible = true;
+        if (!overlayRoots.isEmpty()) beginOverlaySessionIfNeeded();
         if (!isPreview && !isPowerPreview) {
             startTimeout(PreferenceUtils.getTimeout(this));
+        }
+    }
+
+    // --- Overlay-visible time telemetry ---
+
+    private void beginOverlaySessionIfNeeded() {
+        if (overlaySessionStartMillis == 0) {
+            overlaySessionStartMillis = System.currentTimeMillis();
+            handler.postDelayed(telemetryCheckpointRunnable, TELEMETRY_CHECKPOINT_INTERVAL_MS);
+        }
+    }
+
+    /** Periodic safety-net flush: persists progress so far without ending the session. */
+    private void checkpointOverlaySession() {
+        if (overlaySessionStartMillis == 0) return;
+        long now = System.currentTimeMillis();
+        recordElapsedOverlayTime(overlaySessionStartMillis, now);
+        overlaySessionStartMillis = now;
+        handler.postDelayed(telemetryCheckpointRunnable, TELEMETRY_CHECKPOINT_INTERVAL_MS);
+    }
+
+    private void endOverlaySession() {
+        if (overlaySessionStartMillis == 0) return;
+        long now = System.currentTimeMillis();
+        recordElapsedOverlayTime(overlaySessionStartMillis, now);
+        overlaySessionStartMillis = 0;
+        handler.removeCallbacks(telemetryCheckpointRunnable);
+    }
+
+    /** Splits [fromMillis, toMillis) across local-date boundaries so multi-day sessions attribute correctly. */
+    private void recordElapsedOverlayTime(long fromMillis, long toMillis) {
+        if (toMillis <= fromMillis) return;
+        ZoneId zone = ZoneId.systemDefault();
+        long cursor = fromMillis;
+        while (cursor < toMillis) {
+            LocalDate date = Instant.ofEpochMilli(cursor).atZone(zone).toLocalDate();
+            long startOfNextDay = date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli();
+            long segmentEnd = Math.min(toMillis, startOfNextDay);
+            PreferenceUtils.addOverlayMillisForDate(this, date, segmentEnd - cursor);
+            cursor = segmentEnd;
         }
     }
 
@@ -344,12 +407,62 @@ public class OpenAODOverlayService extends AccessibilityService {
     }
 
     private void startBreathing(View view, float minAlpha, float maxAlpha, int duration) {
-        ObjectAnimator animator = ObjectAnimator.ofFloat(view, "alpha", maxAlpha, minAlpha);
-        animator.setDuration(duration);
-        animator.setRepeatMode(ObjectAnimator.REVERSE);
-        animator.setRepeatCount(ObjectAnimator.INFINITE);
-        animator.start();
-        animators.add(animator);
+        int fps = PreferenceUtils.getBreathingFps(this);
+        long frameIntervalMs = Math.max(1L, Math.round(1000.0 / fps));
+        BreathingTask task = new BreathingTask(view, minAlpha, maxAlpha, duration, frameIntervalMs);
+        breathingTasks.add(task);
+        handler.post(task);
+    }
+
+    /**
+     * Drives an infinite alpha pulse (max -> min -> max ...) at a fixed, configurable
+     * frame cadence, independent of the device's display refresh rate. See
+     * PreferenceUtils.getBreathingFps() for rationale.
+     */
+    private class BreathingTask implements Runnable {
+        private final View view;
+        private final float minAlpha, maxAlpha;
+        private final long halfCycleDurationMs;
+        private final long frameIntervalMs;
+        private final Interpolator interpolator = new AccelerateDecelerateInterpolator();
+        private long cycleStartTime;
+        private boolean descending = true; // true: maxAlpha -> minAlpha, false: minAlpha -> maxAlpha
+        private boolean cancelled = false;
+
+        BreathingTask(View view, float minAlpha, float maxAlpha, int duration, long frameIntervalMs) {
+            this.view = view;
+            this.minAlpha = minAlpha;
+            this.maxAlpha = maxAlpha;
+            this.halfCycleDurationMs = duration;
+            this.frameIntervalMs = frameIntervalMs;
+            this.cycleStartTime = SystemClock.uptimeMillis();
+        }
+
+        void cancel() {
+            cancelled = true;
+        }
+
+        @Override
+        public void run() {
+            if (cancelled) return;
+
+            long now = SystemClock.uptimeMillis();
+            long elapsed = now - cycleStartTime;
+            if (elapsed >= halfCycleDurationMs) {
+                descending = !descending;
+                cycleStartTime = now;
+                elapsed = 0;
+            }
+
+            float fraction = halfCycleDurationMs > 0 ? (elapsed / (float) halfCycleDurationMs) : 1f;
+            float interpolated = interpolator.getInterpolation(Math.min(1f, Math.max(0f, fraction)));
+            float alpha = descending
+                    ? maxAlpha - (maxAlpha - minAlpha) * interpolated
+                    : minAlpha + (maxAlpha - minAlpha) * interpolated;
+            view.setAlpha(alpha);
+
+            handler.postDelayed(this, frameIntervalMs);
+        }
     }
 
     private void startTimeout(int timeoutMinutes) {
@@ -359,8 +472,12 @@ public class OpenAODOverlayService extends AccessibilityService {
     }
 
     private void cleanupViews() {
-        for (ObjectAnimator animator : animators) animator.cancel();
-        animators.clear();
+        endOverlaySession();
+        for (BreathingTask task : breathingTasks) {
+            task.cancel();
+            handler.removeCallbacks(task);
+        }
+        breathingTasks.clear();
         for (View root : overlayRoots) {
             try { wm.removeView(root); } catch (Exception ignored) {}
         }

@@ -5,7 +5,10 @@ import android.content.SharedPreferences;
 import android.provider.Settings;
 import android.text.TextUtils;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Set;
 
 public class PreferenceUtils {
@@ -24,6 +27,12 @@ public class PreferenceUtils {
 
     // Discovery keys
     public static final String KEY_DISCOVERED_RULES = "discovered_rules";
+
+    // Debug: Breathing animation frame-rate target (not profile-scoped; a device/debug tuning knob)
+    private static final String KEY_BREATHING_FPS = "debug_breathing_fps";
+    public static final int DEFAULT_BREATHING_FPS = 30;
+    public static final int MIN_BREATHING_FPS = 1;
+    public static final int MAX_BREATHING_FPS = 120;
 
     public enum ShapeType {
         CIRCLE(0, "Circle", true),
@@ -214,6 +223,70 @@ public class PreferenceUtils {
             editor.putInt(getPrefix(context) + "LINES_sides", sides);
         }
         editor.apply();
+    }
+
+    // --- Debug: Breathing FPS target ---
+    public static int getBreathingFps(Context context) {
+        return getPrefs(context).getInt(KEY_BREATHING_FPS, DEFAULT_BREATHING_FPS);
+    }
+
+    public static void setBreathingFps(Context context, int fps) {
+        int clamped = Math.max(MIN_BREATHING_FPS, Math.min(MAX_BREATHING_FPS, fps));
+        getPrefs(context).edit().putInt(KEY_BREATHING_FPS, clamped).apply();
+    }
+
+    // --- Overlay-visible time telemetry (battery diagnostics) ---
+    // Fixed-size ring buffer of exactly TELEMETRY_SLOT_COUNT (7) slots, keyed by
+    // (epochDay % 7), NOT by date directly. Each slot stores which epoch-day it currently
+    // represents plus accumulated millis for that day. This guarantees exactly
+    // TELEMETRY_SLOT_COUNT * 2 fixed SharedPreferences keys FOREVER — storage can never
+    // grow beyond that, no pruning/cleanup pass is ever required, and old data is
+    // automatically discarded (overwritten) the moment its slot is reused ~7 days later.
+    // Persisted (SharedPreferences) so it survives "Reset & Initialize", force-stop, and
+    // device reboot. Kept independent of KEY_CURRENT_PROFILE (getPrefix) since this is
+    // device-level telemetry, not a per-profile display setting.
+    private static final int TELEMETRY_SLOT_COUNT = 7;
+    private static final String TELEMETRY_SLOT_DAY_PREFIX = "telemetry_slot_day_";
+    private static final String TELEMETRY_SLOT_MS_PREFIX = "telemetry_slot_ms_";
+
+    private static int slotFor(LocalDate date) {
+        return (int) Math.floorMod(date.toEpochDay(), (long) TELEMETRY_SLOT_COUNT);
+    }
+
+    public static long getOverlayMillisForDate(Context context, LocalDate date) {
+        SharedPreferences prefs = getPrefs(context);
+        int slot = slotFor(date);
+        long storedEpochDay = prefs.getLong(TELEMETRY_SLOT_DAY_PREFIX + slot, Long.MIN_VALUE);
+        // A slot only holds valid data for the specific date that last wrote to it;
+        // if it currently represents a different day (stale, from ~7+ days ago), treat as 0.
+        if (storedEpochDay != date.toEpochDay()) return 0L;
+        return prefs.getLong(TELEMETRY_SLOT_MS_PREFIX + slot, 0L);
+    }
+
+    public static void addOverlayMillisForDate(Context context, LocalDate date, long millis) {
+        if (millis <= 0) return;
+        long current = getOverlayMillisForDate(context, date); // already 0 if slot is stale
+        int slot = slotFor(date);
+        getPrefs(context).edit()
+                .putLong(TELEMETRY_SLOT_DAY_PREFIX + slot, date.toEpochDay())
+                .putLong(TELEMETRY_SLOT_MS_PREFIX + slot, current + millis)
+                .apply();
+    }
+
+    /**
+     * Returns overlay-visible time (ms) for today plus the previous {@code days - 1} days
+     * (capped at {@link #TELEMETRY_SLOT_COUNT}, since that's all that's ever retained),
+     * oldest first. Missing/stale days are included with a value of 0.
+     */
+    public static LinkedHashMap<LocalDate, Long> getRecentOverlayTelemetry(Context context, int days) {
+        int clampedDays = Math.min(days, TELEMETRY_SLOT_COUNT);
+        LinkedHashMap<LocalDate, Long> result = new LinkedHashMap<>();
+        LocalDate today = LocalDate.now(ZoneId.systemDefault());
+        for (int i = clampedDays - 1; i >= 0; i--) {
+            LocalDate date = today.minusDays(i);
+            result.put(date, getOverlayMillisForDate(context, date));
+        }
+        return result;
     }
 
     // --- Granular Discovery Methods ---

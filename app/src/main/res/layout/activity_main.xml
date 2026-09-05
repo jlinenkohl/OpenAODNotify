@@ -168,6 +168,18 @@
                     android:layout_marginBottom="12dp"
                     android:backgroundTint="?attr/colorError"/>
 
+                <!-- BREATHING FPS TARGET (runtime-tunable, debug builds only) -->
+                <include layout="@layout/stepper_field" android:id="@+id/stepperBreathingFps"/>
+
+                <Button
+                    android:id="@+id/btnApplyBreathingFps"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:text="Apply FPS Target &amp; Reset Overlay"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="12dp"
+                    android:backgroundTint="?attr/colorStep4"/>
+
                 <Button
                     android:id="@+id/btnReset"
                     android:layout_width="match_parent"
@@ -182,6 +194,41 @@
                     android:layout_height="60dp"
                     android:text="Export Debug Logs"
                     android:backgroundTint="?attr/colorSecondary"/>
+
+                <!-- OVERLAY-VISIBLE TIME TELEMETRY (battery diagnostics) -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="?android:attr/listDivider"
+                    android:layout_marginTop="24dp"
+                    android:layout_marginBottom="16dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Overlay Visible Time (Last 7 Days)"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="4dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cumulative time the overlay window was actually visible (screen wake), per day. Persisted across resets/restarts."
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="13sp"
+                    android:layout_marginBottom="8dp"/>
+
+                <TextView
+                    android:id="@+id/tvOverlayTelemetry"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textSize="14sp"
+                    android:text="Loading..."
+                    android:layout_marginBottom="12dp"/>
             </LinearLayout>
 
         </LinearLayout>

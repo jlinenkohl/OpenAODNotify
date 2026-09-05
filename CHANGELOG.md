@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2026-09-05
+
+### Security
+- **Removed hardcoded release-signing credentials from tracked source**: `RELEASE_STORE_PASSWORD`/`RELEASE_KEY_PASSWORD` were briefly hardcoded in plaintext in the root `build.gradle.kts` during signing-config setup. Never committed to git history (verified), but now loaded exclusively from the untracked, gitignored `local.properties` (or CI environment variables), with no fallback literal.
+
+### Changed
+- **Battery: Capped Breathing Animation to a Configurable Frame Rate (default 30fps)**: Replaced the `ObjectAnimator`-based infinite alpha pulse in `OpenAODOverlayService` with a manually-paced `Handler` loop. `ValueAnimator.setFrameDelay()` is a no-op on API 35+, so this was necessary to actually reduce framebuffer/compositor wakeups during long AOD sessions. No visible change to the breathing effect at the default target.
+
+### Added
+- **Debug: Runtime-Adjustable Breathing FPS**: Added a stepper + apply control to the debug tools panel (debug builds only) to tune and apply the breathing animation's target frame rate at runtime, for on-device battery/visual-smoothness tuning without a rebuild.
+- **Debug: Overlay-Visible Time Telemetry**: Added a persisted, 7-slot fixed-size rolling tally of overlay-visible wall-clock time (14 fixed `SharedPreferences` keys forever, no growth, no pruning needed; survives reset/force-stop/reboot), surfaced in the debug tools panel — a proxy for how much display-on time is actually attributable to this app, since Android doesn't attribute that cost per-app in its own battery stats.
+
 ## [1.4] - 2026-06-15
 
 ### Added

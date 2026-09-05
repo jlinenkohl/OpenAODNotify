@@ -19,6 +19,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -33,13 +34,18 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
-    private Button btnOverlay, btnNotify, btnBattery, btnAppInfo, btnTestOverlay, btnAccessibility, btnExportLogs, btnReset;
+    private Button btnOverlay, btnNotify, btnBattery, btnAppInfo, btnTestOverlay, btnAccessibility, btnExportLogs, btnReset, btnApplyBreathingFps;
     private ImageButton btnSettings;
-    private TextView tvVersion;
+    private TextView tvVersion, tvOverlayTelemetry;
+    private View stepperBreathingFps;
     private String currentTheme;
 
     @Override
@@ -54,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
         bindViews();
         displayVersion();
         setupListeners();
+        setupBreathingFpsStepper();
         ensureListenerRunning();
         updateUI();
     }
@@ -76,7 +83,10 @@ public class MainActivity extends AppCompatActivity {
         btnAccessibility = findViewById(R.id.btnAccessibility);
         btnExportLogs = findViewById(R.id.btnExportLogs);
         btnReset = findViewById(R.id.btnReset);
+        btnApplyBreathingFps = findViewById(R.id.btnApplyBreathingFps);
+        stepperBreathingFps = findViewById(R.id.stepperBreathingFps);
         tvVersion = findViewById(R.id.tvVersion);
+        tvOverlayTelemetry = findViewById(R.id.tvOverlayTelemetry);
 
         // Hide advanced debug tools in Release builds
         if (!BuildConfig.DEBUG) {
@@ -149,6 +159,44 @@ public class MainActivity extends AppCompatActivity {
 
         btnExportLogs.setOnClickListener(v -> exportLogs());
         btnReset.setOnClickListener(v -> resetAndInitialize());
+    }
+
+    private void setupBreathingFpsStepper() {
+        ((TextView) stepperBreathingFps.findViewById(R.id.tvLabel)).setText("Breathing FPS Target (debug)");
+        EditText etFps = stepperBreathingFps.findViewById(R.id.etValue);
+        etFps.setText(String.valueOf(PreferenceUtils.getBreathingFps(this)));
+
+        stepperBreathingFps.findViewById(R.id.btnMinus).setOnClickListener(v -> {
+            try {
+                int val = Integer.parseInt(etFps.getText().toString());
+                etFps.setText(String.valueOf(Math.max(PreferenceUtils.MIN_BREATHING_FPS, val - 1)));
+            } catch (Exception ignored) {}
+        });
+        stepperBreathingFps.findViewById(R.id.btnPlus).setOnClickListener(v -> {
+            try {
+                int val = Integer.parseInt(etFps.getText().toString());
+                etFps.setText(String.valueOf(Math.min(PreferenceUtils.MAX_BREATHING_FPS, val + 1)));
+            } catch (Exception ignored) {}
+        });
+
+        btnApplyBreathingFps.setOnClickListener(v -> {
+            try {
+                int fps = Integer.parseInt(etFps.getText().toString());
+                PreferenceUtils.setBreathingFps(this, fps);
+                etFps.setText(String.valueOf(PreferenceUtils.getBreathingFps(this)));
+
+                // Force any currently-running breathing animation to stop; the next time
+                // the overlay is shown (test button or a real notification) it will pick up
+                // the newly saved FPS target since it's read fresh in startBreathing().
+                Intent stopIntent = new Intent(this, OpenAODOverlayService.class);
+                stopIntent.setAction(OpenAODOverlayService.ACTION_STOP);
+                startService(stopIntent);
+
+                Toast.makeText(this, "Breathing FPS target set to " + PreferenceUtils.getBreathingFps(this) + ". Applies on next overlay display.", Toast.LENGTH_LONG).show();
+            } catch (Exception e) {
+                Toast.makeText(this, "Invalid FPS value", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void resetAndInitialize() {
@@ -275,6 +323,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateUI() {
+        updateOverlayTelemetryDisplay();
         if (!Settings.canDrawOverlays(this)) {
             btnOverlay.setVisibility(View.VISIBLE);
             btnOverlay.setOnClickListener(v -> {
@@ -321,5 +370,22 @@ public class MainActivity extends AppCompatActivity {
     private boolean isBatteryOptimized() {
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         return !pm.isIgnoringBatteryOptimizations(getPackageName());
+    }
+
+    private void updateOverlayTelemetryDisplay() {
+        if (tvOverlayTelemetry == null) return;
+        Map<LocalDate, Long> telemetry = PreferenceUtils.getRecentOverlayTelemetry(this, 7);
+        DateTimeFormatter labelFormat = DateTimeFormatter.ofPattern("EEE M/d", Locale.getDefault());
+        LocalDate today = LocalDate.now();
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<LocalDate, Long> entry : telemetry.entrySet()) {
+            LocalDate date = entry.getKey();
+            long totalSeconds = entry.getValue() / 1000;
+            long mins = totalSeconds / 60;
+            long secs = totalSeconds % 60;
+            String label = date.equals(today) ? "Today    " : date.format(labelFormat);
+            sb.append(String.format(Locale.getDefault(), "%-9s %3dm %02ds%n", label, mins, secs));
+        }
+        tvOverlayTelemetry.setText(sb.toString().trim());
     }
 }
