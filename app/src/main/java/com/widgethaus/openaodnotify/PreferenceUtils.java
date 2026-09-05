@@ -289,6 +289,54 @@ public class PreferenceUtils {
         return result;
     }
 
+    // --- Notification-driven overlay trigger count telemetry (battery diagnostics) ---
+    // Same fixed 7-slot ring-buffer pattern as the overlay-visible-time telemetry above,
+    // but counts how many times a *valid* notification actually triggered the overlay/
+    // breathing effect per day. This lets us infer how much of "AOD on" time is actually
+    // attributable to this app's notification-driven breathing vs. native ambient display
+    // simply being on for other reasons (e.g. overnight), since we cannot directly measure
+    // that split with the APIs available to a normal app.
+    private static final int NOTIF_SLOT_COUNT = 7;
+    private static final String NOTIF_SLOT_DAY_PREFIX = "telemetry_notif_slot_day_";
+    private static final String NOTIF_SLOT_COUNT_PREFIX = "telemetry_notif_slot_count_";
+
+    private static int notifSlotFor(LocalDate date) {
+        return (int) Math.floorMod(date.toEpochDay(), (long) NOTIF_SLOT_COUNT);
+    }
+
+    public static long getNotificationCountForDate(Context context, LocalDate date) {
+        SharedPreferences prefs = getPrefs(context);
+        int slot = notifSlotFor(date);
+        long storedEpochDay = prefs.getLong(NOTIF_SLOT_DAY_PREFIX + slot, Long.MIN_VALUE);
+        if (storedEpochDay != date.toEpochDay()) return 0L;
+        return prefs.getLong(NOTIF_SLOT_COUNT_PREFIX + slot, 0L);
+    }
+
+    public static void incrementNotificationCountForDate(Context context, LocalDate date) {
+        long current = getNotificationCountForDate(context, date); // already 0 if slot is stale
+        int slot = notifSlotFor(date);
+        getPrefs(context).edit()
+                .putLong(NOTIF_SLOT_DAY_PREFIX + slot, date.toEpochDay())
+                .putLong(NOTIF_SLOT_COUNT_PREFIX + slot, current + 1)
+                .apply();
+    }
+
+    /**
+     * Returns notification-triggered-overlay counts for today plus the previous
+     * {@code days - 1} days (capped at {@link #NOTIF_SLOT_COUNT}), oldest first.
+     * Missing/stale days are included with a value of 0.
+     */
+    public static LinkedHashMap<LocalDate, Long> getRecentNotificationCounts(Context context, int days) {
+        int clampedDays = Math.min(days, NOTIF_SLOT_COUNT);
+        LinkedHashMap<LocalDate, Long> result = new LinkedHashMap<>();
+        LocalDate today = LocalDate.now(ZoneId.systemDefault());
+        for (int i = clampedDays - 1; i >= 0; i--) {
+            LocalDate date = today.minusDays(i);
+            result.put(date, getNotificationCountForDate(context, date));
+        }
+        return result;
+    }
+
     // --- Granular Discovery Methods ---
     /**
      * Records a discovered notification pattern.

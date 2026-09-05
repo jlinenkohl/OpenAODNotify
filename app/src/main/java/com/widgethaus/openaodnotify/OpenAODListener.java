@@ -283,6 +283,7 @@ public class OpenAODListener extends NotificationListenerService {
         
         hasNotification = true;
         lastNotificationTime = System.currentTimeMillis();
+        PreferenceUtils.incrementNotificationCountForDate(this, java.time.LocalDate.now(java.time.ZoneId.systemDefault()));
         
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         if (pm != null && !pm.isInteractive()) {
